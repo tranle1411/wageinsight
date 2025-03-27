@@ -12,3 +12,4 @@ flask-cors
 joblib
 requests
 gunicorn
+encoder
