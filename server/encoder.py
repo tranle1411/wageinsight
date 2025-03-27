@@ -1,6 +1,6 @@
 import pandas as pd
-import numpy as np
 import os
+import joblib
 
 def one_hot_encoder(df):
     sex_map = {'Man': 1, 'Woman': 0}
@@ -21,15 +21,12 @@ def one_hot_encoder(df):
     return df
 
 def target_encoder(df):
-    
-    # Map values to target encoded values stored in CSV files in folder .\database\encoded
-    encoded_dir = './encoded_data'
-    
+        
     for col in df.select_dtypes(include=['object']).columns:
-        encoded_file = os.path.join(encoded_dir, f'{col}_encoded.csv')
-        if os.path.exists(encoded_file):
-            encoded_df = pd.read_csv(encoded_file, header=0)
-            encoding_map = encoded_df.set_index("Category")["Target Encode Value"].to_dict()
-            df[col] = df[col].map(encoding_map)
+        ENCODED_DATA_PATH = os.path.join(os.path.dirname(__file__), "encoded_data", f"{col}_encoded.csv")
+        encoded_data = joblib.load(ENCODED_DATA_PATH)
+        encoded_df = pd.read_csv(encoded_data, header=0)
+        encoding_map = encoded_df.set_index("Category")["Target Encode Value"].to_dict()
+        df[col] = df[col].map(encoding_map)
     print(encoding_map)
     return df

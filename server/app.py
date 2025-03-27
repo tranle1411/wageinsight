@@ -34,7 +34,8 @@ def predict():
     df = pd.read_csv(file)
     
     # 2. Preprocess df and Load trained model
-    model = joblib.load("model/xgb_model.pkl")
+    MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "xgb_model.pkl")
+    model = joblib.load(MODEL_PATH)
     df = encoder.one_hot_encoder(df)
     df = encoder.target_encoder(df)
     
