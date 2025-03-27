@@ -11,3 +11,4 @@ flask
 flask-cors
 joblib
 requests
+gunicorn
