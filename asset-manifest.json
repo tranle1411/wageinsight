@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/wageinsight/static/css/main.427275ce.chunk.css",
-    "main.js": "/wageinsight/static/js/main.fffdfd66.chunk.js",
-    "main.js.map": "/wageinsight/static/js/main.fffdfd66.chunk.js.map",
+    "main.js": "/wageinsight/static/js/main.94690988.chunk.js",
+    "main.js.map": "/wageinsight/static/js/main.94690988.chunk.js.map",
     "runtime~main.js": "/wageinsight/static/js/runtime~main.a3a9c850.js",
     "runtime~main.js.map": "/wageinsight/static/js/runtime~main.a3a9c850.js.map",
     "static/js/2.a7f37d0f.chunk.js": "/wageinsight/static/js/2.a7f37d0f.chunk.js",
@@ -10,7 +10,7 @@
     "static/js/3.ba8b7f13.chunk.js": "/wageinsight/static/js/3.ba8b7f13.chunk.js",
     "static/js/3.ba8b7f13.chunk.js.map": "/wageinsight/static/js/3.ba8b7f13.chunk.js.map",
     "index.html": "/wageinsight/index.html",
-    "precache-manifest.79210fc3899cc055ddeddd77d2e28e93.js": "/wageinsight/precache-manifest.79210fc3899cc055ddeddd77d2e28e93.js",
+    "precache-manifest.9a05a0a7d1aa3624064d08d2c7586ada.js": "/wageinsight/precache-manifest.9a05a0a7d1aa3624064d08d2c7586ada.js",
     "service-worker.js": "/wageinsight/service-worker.js",
     "static/css/main.427275ce.chunk.css.map": "/wageinsight/static/css/main.427275ce.chunk.css.map",
     "static/media/logo.svg": "/wageinsight/static/media/logo.06e73328.svg"
