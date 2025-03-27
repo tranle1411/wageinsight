@@ -6,11 +6,12 @@ import joblib
 import server.encoder as encoder
 import sys
 import os
+from flask import jsonify
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app, origins=["https://tranle1411.github.io/wageinsight/"])
+CORS(app, origins=["https://tranle1411.github.io"])
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
@@ -54,10 +55,8 @@ def predict():
     prediction_string = "<br>".join(f"${val:,.2f}" for val in np.exp(prediction_array))
 
     # 5. Return the results as HTML
-    return f"""
-    <h2>Predictions:</h2>
-    <p>{prediction_string}</p>
-    """
+    prediction_value = float(np.exp(prediction_array[0]))
+    return jsonify({"prediction": prediction_value})
 
 @app.route('/')
 def home():
