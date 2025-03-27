@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: wageinsight
+    env: python
+    buildCommand: |
+      pip install -r server/requirements.txt
+      cd client && npm install && npm run build
+    startCommand: gunicorn server.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10
+    buildFilter:
+      paths:
+        - server/**
+        - client/**
+    staticPublishPath: client/build
