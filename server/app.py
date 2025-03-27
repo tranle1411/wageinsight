@@ -3,13 +3,11 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 import joblib
-import encoder
+import server.encoder
 import sys
 import os
 
-
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 
 app = Flask(__name__)
 CORS(app)
