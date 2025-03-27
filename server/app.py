@@ -3,7 +3,7 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 import joblib
-import feature_encoder
+import encoder as encoder
 
 app = Flask(__name__)
 CORS(app)
@@ -30,8 +30,8 @@ def predict():
     
     # 2. Preprocess df and Load trained model
     model = joblib.load("model/xgb_model.pkl")
-    df = feature_encoder.one_hot_encoder(df)
-    df = feature_encoder.target_encoder(df)
+    df = encoder.one_hot_encoder(df)
+    df = encoder.target_encoder(df)
     
     # Column order must match the order of columns used to train the model
     train_cols = [
