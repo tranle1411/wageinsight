@@ -7,3 +7,7 @@ scikit-learn
 ISLP
 ipykernel
 xgboost
+flask
+flask-cors
+joblib
+requests

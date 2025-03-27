@@ -1,0 +1,13 @@
+EDUCID,EDUC,EDUCYEARS
+0,N/A or no schooling,0
+1,Nursery school to grade 4,4
+2,"Grade 5, 6, 7, or 8",8
+3,Grade 9,9
+4,Grade 10,10
+5,Grade 11,11
+6,Grade 12,12
+7,1 year of college,13
+8,2 years of college,14
+9,3 years of college,15
+10,4 years of college,16
+11,5+ years of college,17

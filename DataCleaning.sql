@@ -1,8 +1,4 @@
 --database: CSC498.db
-CREATE TABLE raw AS
-SELECT * FROM final;
-
-DROP TABLE final;
 CREATE TABLE final AS
 SELECT * FROM raw;
 
@@ -17,7 +13,7 @@ SELECT
     r.RACE, 
     s.WORKSTATE
 FROM final f
-LEFT JOIN education e ON f.EDUC = e.EDUCID
+LEFT JOIN educ e ON f.EDUC = e.EDUCID
 LEFT JOIN degree d1 ON f.DEGFIELD = d1.DEGFIELDID
 LEFT JOIN degree d2 ON f.DEGFIELD2 = d2.DEGFIELDID
 LEFT JOIN occupation o ON f.OCC = o.OCCID
