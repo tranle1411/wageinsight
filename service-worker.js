@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/wageinsight/precache-manifest.9a05a0a7d1aa3624064d08d2c7586ada.js"
+  "/wageinsight/precache-manifest.aa6a2886f5f9404e4108bd5e5860b092.js"
 );
 
 self.addEventListener('message', (event) => {
