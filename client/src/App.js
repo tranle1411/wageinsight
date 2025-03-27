@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import React from 'react';
 
-const API_URL = "https://wageinsight.onrender.com";
+const API_URL = "https://wageinsight.onrender.com/predict";
 
 function App() {
   return (
