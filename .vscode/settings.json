@@ -1,0 +1,14 @@
+{
+    "dataworkspace.excludedProjects": [
+        "CSC498/CSC498.sqlproj"
+    ],
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:CSC498}/CSC498.db",
+            "name": "CSC498"
+        }
+    ]
+}
