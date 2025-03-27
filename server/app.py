@@ -10,10 +10,11 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://tranle1411.github.io"])
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
+    print("Received prediction request")
     if request.method == 'GET':
         # Show an HTML form so the user can pick a file
         return '''
