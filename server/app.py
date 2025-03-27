@@ -10,7 +10,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app, origins=["https://tranle1411.github.io"])
+CORS(app, origins=["https://tranle1411.github.io/wageinsight/"])
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
