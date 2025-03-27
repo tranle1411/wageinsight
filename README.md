@@ -13,6 +13,8 @@ Here are the steps to run this program on your device:
 5. Application is now run on your local device at this address: http://localhost:5000/predict
 
 How to see analysis:
-1. Create a database called CSC498.db. Import all csv files in 'Database' folder (not the 'test' folder)
-2. Connect to the database using SQLite. Run all queries in DataCleaning.sql
-3. Run analysis.ipynb to see analysis. Note that tuning model will take a very long time to run.
+1. Download training data (raw.csv) from this link https://drive.google.com/file/d/1x50QYjZ9Qs9qzg5To-nvtlhDuQcof8aw/view?usp=sharing
+2. Move raw.csv into 'Database' folder
+3. Create a database called CSC498.db. Import all csv files in 'Database' folder (not the 'test' folder)
+4. Connect to the database using SQLite. Run all queries in DataCleaning.sql
+5. Run analysis.ipynb to see analysis. Note that tuning model will take a very long time to run.
