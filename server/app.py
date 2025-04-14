@@ -15,27 +15,31 @@ CORS(app, origins=["https://tranle1411.github.io"])
 
 @app.route('/predict_form', methods=['POST'])
 def predict_form():
-    data = request.get_json()
-    mode = data.get('mode', 'advanced')  # either 'basic' or 'advanced'
+    try:
+        data = request.get_json()
+        mode = data.get('mode', 'advanced')
+        df = pd.DataFrame([data['inputs']])
 
-    df = pd.DataFrame([data['inputs']])  # Wrap dict in list to create single-row DataFrame
-    df = encoder.one_hot_encoder(df, mode=mode)
-    df = encoder.target_encoder(df)
+        df = encoder.one_hot_encoder(df)
+        df = encoder.target_encoder(df)
 
-    if mode == 'advanced':
-        model_path = os.path.join(os.path.dirname(__file__), "model", "advanced_xgb_model.pkl")
-        features = ['SEX', 'AGE', 'MARST', 'VETSTAT', 'HISPAN',
-                    'CITIZEN', 'SPEAKENG', 'OCC', 'IND', 'EDUC',
-                    'DEGFIELD1', 'DEGFIELD2', 'RACE', 'WORKSTATE']
-    else:
-        model_path = os.path.join(os.path.dirname(__file__), "model", "basic_xgb_model.pkl")
-        features = ['AGE', 'OCC', 'IND','DEGFIELD1' , 'EDUC', 'WORKSTATE']
+        if mode == 'advanced':
+            model_path = os.path.join(os.path.dirname(__file__), "model", "advanced_xgb_model.pkl")
+            features = ['SEX', 'AGE', 'MARST', 'VETSTAT', 'HISPAN',
+                        'CITIZEN', 'SPEAKENG', 'OCC', 'IND', 'EDUC',
+                        'DEGFIELD1', 'DEGFIELD2', 'RACE', 'WORKSTATE']
+        else:
+            model_path = os.path.join(os.path.dirname(__file__), "model", "basic_xgb_model.pkl")
+            features = ['AGE', 'OCC', 'IND','DEGFIELD1' , 'EDUC', 'WORKSTATE']
 
-    model = joblib.load(model_path)
-    df = df[features]
-
-    prediction_value = float(np.exp(model.predict(df)[0]))
-    return jsonify({"prediction": prediction_value})
+        model = joblib.load(model_path)
+        df = df[features]  # <-- might crash if missing columns
+        prediction_value = float(np.exp(model.predict(df)[0]))
+        return jsonify({"prediction": prediction_value})
+    
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/')

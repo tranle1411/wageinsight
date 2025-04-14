@@ -51,6 +51,12 @@ function WageInsightForm() {
     e.preventDefault();
     setLoading(true);
     try {
+        console.log("Submitting prediction request...");
+        console.log("Payload:", {
+          mode: mode,
+          inputs: formData
+        });
+      
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

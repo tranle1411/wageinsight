@@ -1,22 +1,27 @@
 import pandas as pd
 import os
 
-def one_hot_encoder(df):
+def one_hot_encoder(df, mode='advanced'):
+    df['AGE'] = df['AGE'].astype(int)  # Age is always numeric
+
+    if mode == 'basic':
+        return df  # only AGE is numeric in basic mode
+
+    # For advanced mode — apply one-hot/binary mapping
     sex_map = {'Man': 1, 'Woman': 0}
     marst_map = {'Married': 1, 'Not married': 0}
     vetstat_map = {'Veteran': 1, 'Not a veteran': 0}
     hispan_map = {'Hispanic': 1, 'Not Hispanic': 0}
     citizen_map = {'Citizen': 1, 'Not citizen': 0}
     speakeng_map = {'Speaks English': 1, 'Does not speak English': 0}
-    
-    # Map values to integers
-    df['SEX'] = df['SEX'].map(sex_map)
-    df['MARST'] = df['MARST'].map(marst_map)
-    df['VETSTAT'] = df['VETSTAT'].map(vetstat_map)
-    df['HISPAN'] = df['HISPAN'].map(hispan_map)
-    df['CITIZEN'] = df['CITIZEN'].map(citizen_map)
-    df['SPEAKENG'] = df['SPEAKENG'].map(speakeng_map)
-    
+
+    df['SEX'] = df['SEX'].map(sex_map).fillna(-1)
+    df['MARST'] = df['MARST'].map(marst_map).fillna(-1)
+    df['VETSTAT'] = df['VETSTAT'].map(vetstat_map).fillna(-1)
+    df['HISPAN'] = df['HISPAN'].map(hispan_map).fillna(-1)
+    df['CITIZEN'] = df['CITIZEN'].map(citizen_map).fillna(-1)
+    df['SPEAKENG'] = df['SPEAKENG'].map(speakeng_map).fillna(-1)
+
     return df
 
 def target_encoder(df):
