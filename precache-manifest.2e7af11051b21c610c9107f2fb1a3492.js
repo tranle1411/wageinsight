@@ -1,10 +1,10 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "9443519e3368201135c0f006e138ce26",
+    "revision": "09d043218447b4d51404f520e98d838b",
     "url": "/wageinsight/index.html"
   },
   {
-    "revision": "ad933b52f9c982bdac10",
+    "revision": "b8667405fa2b6552f823",
     "url": "/wageinsight/static/css/main.427275ce.chunk.css"
   },
   {
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/wageinsight/static/js/3.a29efab2.chunk.js"
   },
   {
-    "revision": "ad933b52f9c982bdac10",
-    "url": "/wageinsight/static/js/main.5226ee73.chunk.js"
+    "revision": "b8667405fa2b6552f823",
+    "url": "/wageinsight/static/js/main.b7541009.chunk.js"
   },
   {
     "revision": "9c399b88a2df28d364ee",
