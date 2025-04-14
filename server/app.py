@@ -11,7 +11,7 @@ from flask import jsonify
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app, resources={r"/predict_form": {"origins": "https://tranle1411.github.io"}}, supports_credentials=True)
+CORS(app, origins=["https://tranle1411.github.io"], methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type"])
 
 @app.route('/predict_form', methods=['OPTIONS'])
 def options_predict_form():
@@ -29,7 +29,7 @@ def predict_form():
         mode = data.get('mode', 'advanced')
         df = pd.DataFrame([data['inputs']])
 
-        df = encoder.one_hot_encoder(df)
+        df = encoder.one_hot_encoder(df, mode=mode)
         df = encoder.target_encoder(df)
 
         if mode == 'advanced':
@@ -42,13 +42,19 @@ def predict_form():
             features = ['AGE', 'OCC', 'IND','DEGFIELD1' , 'EDUC', 'WORKSTATE']
 
         model = joblib.load(model_path)
-        df = df[features]  # <-- might crash if missing columns
+        df = df[features]
+
         prediction_value = float(np.exp(model.predict(df)[0]))
-        return jsonify({"prediction": prediction_value})
-    
+        response = jsonify({"prediction": prediction_value})
+        response.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
+        return response
+
     except Exception as e:
         print("Error:", e)
-        return jsonify({"error": str(e)}), 500
+        error_response = jsonify({"error": str(e)})
+        error_response.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
+        return error_response, 500
+
 
 
 @app.route('/')
