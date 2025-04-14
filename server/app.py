@@ -11,7 +11,16 @@ from flask import jsonify
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app, origins=["https://tranle1411.github.io"])
+CORS(app, resources={r"/predict_form": {"origins": "https://tranle1411.github.io"}}, supports_credentials=True)
+
+@app.route('/predict_form', methods=['OPTIONS'])
+def options_predict_form():
+    response = jsonify({'status': 'OK'})
+    response.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
+
 
 @app.route('/predict_form', methods=['POST'])
 def predict_form():
