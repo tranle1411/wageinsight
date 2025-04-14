@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import joblib
 
 def one_hot_encoder(df):
     sex_map = {'Man': 1, 'Woman': 0}
@@ -21,11 +20,19 @@ def one_hot_encoder(df):
     return df
 
 def target_encoder(df):
-        
-    for col in df.select_dtypes(include=['object']).columns:
+    # These are binary-coded by one_hot_encoder already
+    one_hot_columns = ['SEX', 'MARST', 'VETSTAT', 'HISPAN', 'CITIZEN', 'SPEAKENG', 'AGE']
+
+    for col in df.columns:
+        if col in one_hot_columns:
+            continue
+
         ENCODED_DATA_PATH = os.path.join(os.path.dirname(__file__), "encoded_data", f"{col}_encoded.csv")
-        encoded_df = pd.read_csv(ENCODED_DATA_PATH, header=0)
-        encoding_map = encoded_df.set_index("Category")["Target Encode Value"].to_dict()
-        df[col] = df[col].map(encoding_map)
-    print(encoding_map)
+        if os.path.exists(ENCODED_DATA_PATH):
+            encoded_df = pd.read_csv(ENCODED_DATA_PATH)
+            encoding_map = encoded_df.set_index("Category")["Target Encode Value"].to_dict()
+            df[col] = df[col].map(encoding_map).fillna(0)
+        else:
+            print(f"[Warning] No encoding file found for column: {col}")
+
     return df
