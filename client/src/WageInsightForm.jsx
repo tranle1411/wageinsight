@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { loadCsvOptions } from './utils/loadCsvOptions';
 
-const API_URL = 'https://wageinsight.onrender.com/predict_form';
+const API_URL = "https://wageinsight.onrender.com/predict_form";
 
 const basicFields = ['AGE', 'OCC', 'IND', 'EDUC', 'WORKSTATE'];
 const advancedFields = [
