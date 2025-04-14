@@ -4,7 +4,7 @@ import { loadCsvOptions } from './utils/loadCsvOptions';
 
 const API_URL = "https://wageinsight.onrender.com/predict_form";
 
-const basicFields = ['AGE', 'OCC', 'IND', 'EDUC', 'WORKSTATE'];
+const basicFields = ['AGE', 'OCC', 'IND', 'DEGFIELD1', 'EDUC', 'WORKSTATE'];
 const advancedFields = [
   'SEX', 'AGE', 'MARST', 'VETSTAT', 'HISPAN', 'CITIZEN',
   'SPEAKENG', 'OCC', 'IND', 'EDUC', 'DEGFIELD1', 'DEGFIELD2', 'RACE', 'WORKSTATE'
