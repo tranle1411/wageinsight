@@ -9,5 +9,9 @@ export async function loadCsvOptions(url) {
     values.add(value);
   }
 
-  return Array.from(values).sort();
+  const sorted = Array.from(values).sort();
+  const naOptions = sorted.filter(v => v.trim().toLowerCase().includes("n/a"));
+  const rest = sorted.filter(v => !v.trim().toLowerCase().includes("n/a"));
+  return [...naOptions, ...rest];
+
 }

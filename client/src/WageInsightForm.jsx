@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { loadCsvOptions } from './utils/loadCsvOptions';
+import { Autocomplete, TextField } from '@mui/material';
+
 
 const API_URL = "https://wageinsight.onrender.com/predict_form";
 
@@ -8,6 +10,32 @@ const basicFields = ['AGE', 'OCC', 'IND', 'DEGFIELD1', 'EDUC', 'WORKSTATE'];
 const advancedFields = [
   'SEX', 'AGE', 'MARST', 'VETSTAT', 'HISPAN', 'CITIZEN',
   'SPEAKENG', 'OCC', 'IND', 'EDUC', 'DEGFIELD1', 'DEGFIELD2', 'RACE', 'WORKSTATE'
+];
+
+const prettyLabels = {
+  AGE: "Age",
+  SEX: "Gender",
+  MARST: "Marital Status",
+  VETSTAT: "Veteran Status",
+  HISPAN: "Hispanic Origin",
+  CITIZEN: "Citizenship",
+  SPEAKENG: "English Fluency",
+  OCC: "Occupation",
+  IND: "Industry",
+  EDUC: "Education Level",
+  DEGFIELD1: "1st Degree Field",
+  DEGFIELD2: "2nd Degree Field",
+  RACE: "Race",
+  WORKSTATE: "Work State"
+};
+
+const EDUC_ORDER = [
+  "N/A or no schooling",
+  "Nursery school to grade 4",
+  "Grade 5", "Grade 6", "Grade 7", "Grade 8",
+  "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+  "1 year of college", "2 years of college", "3 years of college",
+  "4 years of college", "5+ years of college"
 ];
 
 function WageInsightForm() {
@@ -38,6 +66,7 @@ function WageInsightForm() {
         SPEAKENG: ['Speaks English', 'Does not speak English'],
         AGE: Array.from({ length: 48 }, (_, i) => (i + 18).toString())
       };
+      options.EDUC = EDUC_ORDER;
       setFieldOptions(options);
     }
     loadAll();
@@ -49,6 +78,10 @@ function WageInsightForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (fields.some(f => !formData[f])) {
+      alert("Please fill out all fields before submitting.");
+      return;
+    }
     setLoading(true);
     try {
         console.log("Submitting prediction request...");
@@ -68,12 +101,12 @@ function WageInsightForm() {
       console.error('Error:', err);
     } finally {
       setLoading(false);
-    }
+    }   
   };
 
   return (
     <div className="App">
-      <h1>WageInsight Predictor</h1>
+      <h1>WageInsight: American's Salary Predictor</h1>
 
       <div style={{ marginBottom: '1rem' }}>
         <label>
@@ -90,12 +123,30 @@ function WageInsightForm() {
           <div key={field} style={{ marginBottom: '0.75rem' }}>
             <label>
               {field}:&nbsp;
-              <select name={field} onChange={handleChange} required>
-                <option value="">-- select --</option>
-                {(fieldOptions[field] || []).map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              {field === 'AGE' ? (
+                <input
+                  type="number"
+                  name="AGE"
+                  min="18"
+                  max="65"
+                  value={formData.AGE || ''}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your age"
+                />
+              ) : (
+                <Autocomplete
+                  options={fieldOptions[field] || []}
+                  getOptionLabel={(option) => option}
+                  value={formData[field] || ''}
+                  onChange={(event, newValue) => {
+                    setFormData({ ...formData, [field]: newValue || '' });
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label={prettyLabels[field] || field} required />
+                  )}
+                />
+              )}
             </label>
           </div>
         ))}
