@@ -18,8 +18,14 @@ def predict_form():
     try:
         data = request.get_json()
         mode = data.get('mode', 'advanced')
-        df = pd.DataFrame([data['inputs']])
-
+        user_inputs = data['inputs'].copy()
+        ages = list(range(25, 65))
+        batch = []
+        for a in ages:
+            row = user_inputs.copy()
+            row['AGE'] = a
+            batch.append(row)
+        df = pd.DataFrame(batch)
         df = encoder.one_hot_encoder(df, mode=mode)
         df = encoder.target_encoder(df)
 
@@ -35,8 +41,13 @@ def predict_form():
         model = joblib.load(model_path)
         df = df[features]
 
-        prediction_value = float(np.exp(model.predict(df)[0]))
-        response = jsonify({"prediction": prediction_value})
+        preds = model.predict(df)
+        salaries = np.exp(preds)
+        series = [
+            {"age": int(row["AGE"]), "salary": float(sal)}
+            for row, sal in zip(df.to_dict(orient="records"), salaries)
+        ]
+        response = jsonify({"series": series})
         response.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
         return response
 
