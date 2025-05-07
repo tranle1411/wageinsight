@@ -1,196 +1,149 @@
-// src/WageInsightForm.jsx
-import React, { useState, useEffect } from 'react';
-import { Autocomplete, TextField, Button, MenuItem, Select, InputLabel, FormControl, CircularProgress } from '@mui/material';
+import React, { useState } from 'react';
 import Plot from 'react-plotly.js';
-import { loadCsvOptions } from './utils/loadCsvOptions';
 import './App.css';
 
-const API_URL = "https://wageinsight.onrender.com/predict_form";
+// your existing imports
+import { loadCsvOptions } from './utils/loadCsvOptions';
+import { Autocomplete, TextField } from '@mui/material';
 
-const basicFields = ['OCC','IND','DEGFIELD1','EDUC','WORKSTATE'];
-const advancedFields = [
-  'SEX','MARST','VETSTAT','HISPAN','CITIZEN','SPEAKENG',
-  'OCC','IND','EDUC','DEGFIELD1','DEGFIELD2','RACE','WORKSTATE'
-];
+const API_URL = 'https://wageinsight.onrender.com/predict_form';
 
-const prettyLabels = {
-  SEX: "Gender",
-  MARST: "Marital Status",
-  VETSTAT: "Veteran Status",
-  HISPAN: "Hispanic Origin",
-  CITIZEN: "Citizenship",
-  SPEAKENG: "English Fluency",
-  OCC: "Occupation",
-  IND: "Industry",
-  EDUC: "Education Level",
-  DEGFIELD1: "1st Degree Field",
-  DEGFIELD2: "2nd Degree Field",
-  RACE: "Race",
-  WORKSTATE: "Work State"
-};
+// … your basicFields, advancedFields, prettyLabels, etc
 
-// If you need a custom order for EDUC:
-const EDUC_ORDER = [
-  "N/A or no schooling",
-  "Nursery school to grade 4",
-  "Grade 5","Grade 6","Grade 7","Grade 8",
-  "Grade 9","Grade 10","Grade 11","Grade 12",
-  "1 year of college","2 years of college","3 years of college",
-  "4 years of college","5+ years of college"
-];
-
-export default function WageInsightForm() {
-  const [mode, setMode] = useState('basic');
-  const [options, setOptions] = useState({});
-  const [inputs, setInputs] = useState({});
-  const [series, setSeries] = useState(null);
-  const [singleSalary, setSingleSalary] = useState(null);
+function WageInsightForm() {
+  const [mode,    setMode]    = useState('basic');
+  const [form,    setForm]    = useState({});
+  const [curve,   setCurve]   = useState({ ages: [], salaries: [] });
+  const [info,    setInfo]    = useState([]); // for the comparisons
   const [loading, setLoading] = useState(false);
 
-  const fields = mode === 'basic' ? basicFields : advancedFields;
+  // … your loadCsvOptions into fieldOptions, handleChange, etc
 
-  useEffect(() => {
-    async function loadAll() {
-      const prefix = "/wageinsight/options/";
-      const opts = {
-        OCC: await loadCsvOptions(prefix + "occupation.csv"),
-        IND: await loadCsvOptions(prefix + "industry.csv"),
-        EDUC: await loadCsvOptions(prefix + "educ.csv"),
-        DEGFIELD1: await loadCsvOptions(prefix + "degree.csv"),
-        DEGFIELD2: await loadCsvOptions(prefix + "degree.csv"),
-        RACE: await loadCsvOptions(prefix + "race.csv"),
-        WORKSTATE: await loadCsvOptions(prefix + "state.csv"),
-        SEX: ['Man','Woman'],
-        MARST: ['Married','Not married'],
-        VETSTAT: ['Veteran','Not a veteran'],
-        HISPAN: ['Hispanic','Not Hispanic'],
-        CITIZEN: ['Citizen','Not citizen'],
-        SPEAKENG: ['Speaks English','Does not speak English']
-      };
-
-      // override EDUC order if desired
-      opts.EDUC = EDUC_ORDER.filter(x => opts.EDUC.includes(x)).concat(
-        opts.EDUC.filter(x => !EDUC_ORDER.includes(x))
-      );
-
-      setOptions(opts);
-    }
-    loadAll();
-  }, []);
-
-  const handleChange = (field) => (_, value) => {
-    setInputs(i => ({ ...i, [field]: value }));
-  };
-
-  const handleModeChange = (e) => {
-    setMode(e.target.value);
-    setInputs({});       // clear previous inputs
-    setSeries(null);
-    setSingleSalary(null);
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    // validate
-    for (let f of fields) {
-      if (!inputs[f]) {
-        alert(`Please select ${prettyLabels[f] || f}`);
-        return;
-      }
-    }
-
+    // validate…
     setLoading(true);
-    setSeries(null);
-    setSingleSalary(null);
 
-    try {
-      const resp = await fetch(API_URL, {
+    // build an array of ages 25–64
+    const ages = Array.from({ length: 40 }, (_, i) => i + 25);
+
+    // for each age, call backend with that age + the other inputs
+    const promises = ages.map(age =>
+      fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ mode, inputs })
-      });
-      const data = await resp.json();
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode,
+          inputs: { ...form, AGE: age }
+        })
+      }).then(r => r.json())
+        .then(j => j.prediction)
+    );
 
-      if (data.series) {
-        setSeries(data.series);
-      } else if (data.salary) {
-        setSingleSalary(data.salary);
-      } else if (data.prediction) {
-        setSingleSalary(data.prediction);
-      }
-    } catch(err) {
-      console.error(err);
-      alert("Prediction failed, see console.");
-    } finally {
-      setLoading(false);
-    }
+    const salaries = await Promise.all(promises);
+
+    // set up the line data
+    setCurve({ ages, salaries });
+
+    // compute the “median difference” info panel.
+    // v simple: pick the mid‐age (e.g. 45) as representative:
+    const midIdx = Math.floor(ages.length/2);
+    const midAge = ages[midIdx];
+    const midSalary = salaries[midIdx];
+
+    // for each binary field, flip it to the other value,
+    // re-predict at midAge, compute delta:
+    const binaryFields = [
+      { key:'SEX',       yes:'Man',              no:'Woman',              label:'Gender'          },
+      { key:'MARST',     yes:'Married',          no:'Not married',        label:'Marital Status'  },
+      { key:'VETSTAT',   yes:'Veteran',          no:'Not a veteran',      label:'Veteran Status'  },
+      { key:'HISPAN',    yes:'Not Hispanic',     no:'Hispanic',           label:'Hispanic Origin' },
+      { key:'CITIZEN',   yes:'Citizen',          no:'Not citizen',        label:'Citizenship'     },
+      { key:'SPEAKENG',  yes:'Speaks English',   no:'Does not speak English', label:'English Fluency'}
+    ];
+
+    const infoPromises = binaryFields.map(async f => {
+      const userVal = form[f.key];
+      const flipped = (userVal === f.yes ? f.no : f.yes);
+
+      // call backend once at midAge for flipped
+      const resp = await fetch(API_URL, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          mode,
+          inputs: { ...form, AGE: midAge, [f.key]: flipped }
+        })
+      });
+      const otherSal = (await resp.json()).prediction;
+
+      const diff = midSalary - otherSal;      
+      return {
+        label:     f.label,
+        youChose:  userVal,
+        other:     flipped,
+        delta:     Math.abs(diff),
+        more:      diff > 0
+      };
+    });
+
+    const infoArray = await Promise.all(infoPromises);
+    setInfo(infoArray);
+
+    setLoading(false);
   };
 
   return (
-    <div className="App">
-      <h1>WageInsight Dashboard</h1>
-      <FormControl sx={{ minWidth:120, marginBottom:2 }}>
-        <InputLabel>Mode</InputLabel>
-        <Select value={mode} label="Mode" onChange={handleModeChange}>
-          <MenuItem value="basic">Basic</MenuItem>
-          <MenuItem value="advanced">Advanced</MenuItem>
-        </Select>
-      </FormControl>
+    <div className="dashboard">
+      {/* LEFT: the line chart */}
+      <div className="chart">
+        <form onSubmit={handleSubmit}>
+          {/* … your dropdowns/autocompletes */}
+          <button type="submit" disabled={loading}>
+            {loading ? 'Predicting…' : 'Predict Salary Curve'}
+          </button>
+        </form>
 
-      <form onSubmit={handleSubmit}>
-        {fields.map(field => (
-          <Autocomplete
-            key={field}
-            options={options[field]||[]}
-            getOptionLabel={opt=>opt}
-            onChange={handleChange(field)}
-            value={inputs[field]||null}
-            renderInput={params => (
-              <TextField
-                {...params}
-                label={prettyLabels[field]||field}
-                variant="outlined"
-                margin="normal"
-                required
-              />
-            )}
+        {curve.ages.length > 0 &&
+          <Plot
+            data={[{
+              x: curve.ages,
+              y: curve.salaries,
+              type: 'scatter',
+              mode: 'lines+markers',
+              hovertemplate:
+                'Age: %{x}<br>' +
+                'Salary: $%{y:,.0f}<extra></extra>',
+              line: { color: '#007bff' }
+            }]}
+            layout={{
+              title: 'Predicted Salary vs Age',
+              xaxis: { title: 'Age' },
+              yaxis: { title: 'Salary ($)' },
+              margin: { t:40, l:60, r:20, b:40 },
+              width: 600,
+              height: 400
+            }}
+            useResizeHandler
+            style={{ width: '100%', height: '100%' }}
           />
-        ))}
+        }
+      </div>
 
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={loading}
-        >
-          {loading ? <CircularProgress size={24}/> : "Predict Salary"}
-        </Button>
-      </form>
-
-      {series && (
-        <Plot
-          data={[{
-            x: series.map(pt=>pt.age),
-            y: series.map(pt=>pt.salary),
-            type: 'scatter', mode: 'lines+markers',
-            marker: { size:6 }
-          }]}
-          layout={{
-            width: 700, height: 400,
-            title: 'Predicted Salary vs. Age',
-            xaxis:{ title:'Age' }, yaxis:{ title:'Salary ($)' }
-          }}
-        />
-      )}
-
-      {singleSalary != null && (
-        <div style={{ marginTop:20 }}>
-          <h2>Estimated Salary:</h2>
-          <p style={{ fontSize:24 }}>
-            <strong>${singleSalary.toLocaleString(undefined,{maximumFractionDigits:2})}</strong>
+      {/* RIGHT: the info panel */}
+      <div className="infoPanel">
+        {info.map((item, i) => (
+          <p key={i}>
+            On median, <strong>{item.youChose}</strong> {item.label} make{" "}
+            <strong>
+              ${item.delta.toLocaleString(undefined, { maximumFractionDigits:0 })}
+            </strong>{" "}
+            {item.more ? 'more' : 'less'} than{" "}
+            <strong>{item.other}</strong>.
           </p>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
+
+export default WageInsightForm;

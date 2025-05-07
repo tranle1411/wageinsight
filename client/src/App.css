@@ -36,3 +36,19 @@
     transform: rotate(360deg);
   }
 }
+
+.dashboard {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.chart {
+  flex: 1;           /* take left half */
+}
+
+.infoPanel {
+  flex: 1;           /* take right half */
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
