@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/wageinsight/static/css/main.f855e6bc.css",
-    "main.js": "/wageinsight/static/js/main.e97d4ac5.js",
+    "main.css": "/wageinsight/static/css/main.1e5c9187.css",
+    "main.js": "/wageinsight/static/js/main.51163305.js",
     "static/js/453.419a5d54.chunk.js": "/wageinsight/static/js/453.419a5d54.chunk.js",
     "index.html": "/wageinsight/index.html",
-    "main.f855e6bc.css.map": "/wageinsight/static/css/main.f855e6bc.css.map",
-    "main.e97d4ac5.js.map": "/wageinsight/static/js/main.e97d4ac5.js.map",
+    "main.1e5c9187.css.map": "/wageinsight/static/css/main.1e5c9187.css.map",
+    "main.51163305.js.map": "/wageinsight/static/js/main.51163305.js.map",
     "453.419a5d54.chunk.js.map": "/wageinsight/static/js/453.419a5d54.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.f855e6bc.css",
-    "static/js/main.e97d4ac5.js"
+    "static/css/main.1e5c9187.css",
+    "static/js/main.51163305.js"
   ]
 }
