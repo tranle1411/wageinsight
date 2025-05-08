@@ -1,103 +1,126 @@
 // src/WageInsightForm.jsx
-
 import React, { useState, useEffect } from 'react';
-import { Autocomplete, TextField, Button } from '@mui/material';
+import { Autocomplete, TextField, Button, MenuItem, Select, InputLabel, FormControl, CircularProgress } from '@mui/material';
 import Plot from 'react-plotly.js';
-import './App.css';
 import { loadCsvOptions } from './utils/loadCsvOptions';
+import './App.css';
 
 const API_URL = "https://wageinsight.onrender.com/predict_form";
 
-const basicFields = ['OCC', 'IND', 'DEGFIELD1', 'EDUC', 'WORKSTATE'];
+const basicFields = ['OCC','IND','DEGFIELD1','EDUC','WORKSTATE'];
 const advancedFields = [
-  'SEX', 'MARST', 'VETSTAT', 'HISPAN', 'CITIZEN', 'SPEAKENG',
-  'OCC', 'IND', 'EDUC', 'DEGFIELD1', 'DEGFIELD2', 'RACE', 'WORKSTATE'
+  'SEX','MARST','VETSTAT','HISPAN','CITIZEN','SPEAKENG',
+  'OCC','IND','EDUC','DEGFIELD1','DEGFIELD2','RACE','WORKSTATE'
 ];
 
 const prettyLabels = {
-  SEX:       "Gender",
-  MARST:     "Marital Status",
-  VETSTAT:   "Veteran Status",
-  HISPAN:    "Hispanic Origin",
-  CITIZEN:   "Citizenship",
-  SPEAKENG:  "English Fluency",
-  OCC:       "Occupation",
-  IND:       "Industry",
-  EDUC:      "Education Level",
+  SEX: "Gender",
+  MARST: "Marital Status",
+  VETSTAT: "Veteran Status",
+  HISPAN: "Hispanic Origin",
+  CITIZEN: "Citizenship",
+  SPEAKENG: "English Fluency",
+  OCC: "Occupation",
+  IND: "Industry",
+  EDUC: "Education Level",
   DEGFIELD1: "1st Degree Field",
   DEGFIELD2: "2nd Degree Field",
-  RACE:      "Race",
+  RACE: "Race",
   WORKSTATE: "Work State"
 };
 
-export default function WageInsightForm() {
-  const [mode, setMode]         = useState('basic');
-  const [fields, setFields]     = useState(basicFields);
-  const [options, setOptions]   = useState({});
-  const [form, setForm]         = useState({});
-  const [series, setSeries]     = useState(null);
-  const [info, setInfo]         = useState([]);
-  const [loading, setLoading]   = useState(false);
+// If you need a custom order for EDUC:
+const EDUC_ORDER = [
+  "N/A or no schooling",
+  "Nursery school to grade 4",
+  "Grade 5","Grade 6","Grade 7","Grade 8",
+  "Grade 9","Grade 10","Grade 11","Grade 12",
+  "1 year of college","2 years of college","3 years of college",
+  "4 years of college","5+ years of college"
+];
 
-  // Load dropdown options once
+export default function WageInsightForm() {
+  const [mode, setMode] = useState('basic');
+  const [options, setOptions] = useState({});
+  const [inputs, setInputs] = useState({});
+  const [series, setSeries] = useState(null);
+  const [singleSalary, setSingleSalary] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fields = mode === 'basic' ? basicFields : advancedFields;
+
   useEffect(() => {
     async function loadAll() {
-      const prefix = "/options/";
+      const prefix = "/wageinsight/options/";
       const opts = {
-        EDUC:      await loadCsvOptions(prefix + "educ.csv"),
+        OCC: await loadCsvOptions(prefix + "occupation.csv"),
+        IND: await loadCsvOptions(prefix + "industry.csv"),
+        EDUC: await loadCsvOptions(prefix + "educ.csv"),
         DEGFIELD1: await loadCsvOptions(prefix + "degree.csv"),
         DEGFIELD2: await loadCsvOptions(prefix + "degree.csv"),
-        OCC:       await loadCsvOptions(prefix + "occupation.csv"),
-        IND:       await loadCsvOptions(prefix + "industry.csv"),
-        RACE:      await loadCsvOptions(prefix + "race.csv"),
+        RACE: await loadCsvOptions(prefix + "race.csv"),
         WORKSTATE: await loadCsvOptions(prefix + "state.csv"),
-        SEX:       ['Man','Woman'],
-        MARST:     ['Married','Not married'],
-        VETSTAT:   ['Veteran','Not a veteran'],
-        HISPAN:    ['Hispanic','Not Hispanic'],
-        CITIZEN:   ['Citizen','Not citizen'],
-        SPEAKENG:  ['Speaks English','Does not speak English']
+        SEX: ['Man','Woman'],
+        MARST: ['Married','Not married'],
+        VETSTAT: ['Veteran','Not a veteran'],
+        HISPAN: ['Hispanic','Not Hispanic'],
+        CITIZEN: ['Citizen','Not citizen'],
+        SPEAKENG: ['Speaks English','Does not speak English']
       };
+
+      // override EDUC order if desired
+      opts.EDUC = EDUC_ORDER.filter(x => opts.EDUC.includes(x)).concat(
+        opts.EDUC.filter(x => !EDUC_ORDER.includes(x))
+      );
+
       setOptions(opts);
     }
     loadAll();
   }, []);
 
-  // Update which fields to render when mode changes
-  useEffect(() => {
-    setFields(mode === 'basic' ? basicFields : advancedFields);
-    setForm({});
-    setSeries(null);
-    setInfo([]);
-  }, [mode]);
-
   const handleChange = (field) => (_, value) => {
-    setForm(f => ({ ...f, [field]: value || '' }));
+    setInputs(i => ({ ...i, [field]: value }));
+  };
+
+  const handleModeChange = (e) => {
+    setMode(e.target.value);
+    setInputs({});       // clear previous inputs
+    setSeries(null);
+    setSingleSalary(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // require all fields filled
-    if (fields.some(f => !form[f])) {
-      alert("Please select a value for every field.");
-      return;
+    // validate
+    for (let f of fields) {
+      if (!inputs[f]) {
+        alert(`Please select ${prettyLabels[f] || f}`);
+        return;
+      }
     }
 
     setLoading(true);
+    setSeries(null);
+    setSingleSalary(null);
+
     try {
       const resp = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, inputs: form })
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ mode, inputs })
       });
       const data = await resp.json();
-      // data.series: [{ age:25, salary:... }, …]
-      // data.info:   [{ you:"Non-Hispanic", other:"Hispanic", label:"…", delta:1234, more:true }, …]
-      setSeries(data.series);
-      setInfo(data.info || []);
-    } catch (err) {
+
+      if (data.series) {
+        setSeries(data.series);
+      } else if (data.salary) {
+        setSingleSalary(data.salary);
+      } else if (data.prediction) {
+        setSingleSalary(data.prediction);
+      }
+    } catch(err) {
       console.error(err);
-      alert("Prediction failed; see console for details.");
+      alert("Prediction failed, see console.");
     } finally {
       setLoading(false);
     }
@@ -105,80 +128,67 @@ export default function WageInsightForm() {
 
   return (
     <div className="App">
-      <h1>WageInsight: Salary Curve</h1>
+      <h1>WageInsight Dashboard</h1>
+      <FormControl sx={{ minWidth:120, marginBottom:2 }}>
+        <InputLabel>Mode</InputLabel>
+        <Select value={mode} label="Mode" onChange={handleModeChange}>
+          <MenuItem value="basic">Basic</MenuItem>
+          <MenuItem value="advanced">Advanced</MenuItem>
+        </Select>
+      </FormControl>
 
-      <form onSubmit={handleSubmit} className="formContainer">
-        <div>
-          <label>
-            <strong>Mode:&nbsp;</strong>
-            <select value={mode} onChange={e => setMode(e.target.value)}>
-              <option value="basic">Basic</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </label>
-        </div>
-
-        {fields.map(f => (
-          <div key={f} className="fieldRow">
-            <Autocomplete
-              options={options[f] || []}
-              getOptionLabel={opt => opt}
-              value={form[f] || ''}
-              onChange={handleChange(f)}
-              renderInput={params => (
-                <TextField
-                  {...params}
-                  label={prettyLabels[f]}
-                  required
-                  size="small"
-                />
-              )}
-            />
-          </div>
+      <form onSubmit={handleSubmit}>
+        {fields.map(field => (
+          <Autocomplete
+            key={field}
+            options={options[field]||[]}
+            getOptionLabel={opt=>opt}
+            onChange={handleChange(field)}
+            value={inputs[field]||null}
+            renderInput={params => (
+              <TextField
+                {...params}
+                label={prettyLabels[field]||field}
+                variant="outlined"
+                margin="normal"
+                required
+              />
+            )}
+          />
         ))}
 
-        <div>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={loading}
-          >
-            {loading ? 'Predicting…' : 'Predict Salary Curve'}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={loading}
+        >
+          {loading ? <CircularProgress size={24}/> : "Predict Salary"}
+        </Button>
       </form>
 
-      {/* Show chart + info only after we have a series */}
       {series && (
-        <div className="dashboard">
-          <div className="chart">
-            <Plot
-              data={[{
-                x: series.map(pt => pt.age),
-                y: series.map(pt => pt.salary),
-                type: 'scatter',
-                mode: 'lines+markers',
-                hovertemplate:
-                  'Age: %{x}<br>Salary: $%{y:,.0f}<extra></extra>'
-              }]}
-              layout={{
-                margin: { t:20, b:40, l:40, r:20 },
-                xaxis: { title: 'Age' },
-                yaxis: { title: 'Predicted Salary' }
-              }}
-              style={{ width: '100%', height: '100%' }}
-            />
-          </div>
-          <div className="infoPanel">
-            {info.map((it, i) => (
-              <p key={i}>
-                On median, <strong>{it.you}</strong> {it.label} make&nbsp;
-                <strong>${it.delta.toLocaleString()}</strong>&nbsp;
-                {it.more ? 'more' : 'less'} than <strong>{it.other}</strong>.
-              </p>
-            ))}
-          </div>
+        <Plot
+          data={[{
+            x: series.map(pt=>pt.age),
+            y: series.map(pt=>pt.salary),
+            type: 'scatter', mode: 'lines+markers',
+            marker: { size:6 }
+          }]}
+          layout={{
+            width: 700, height: 400,
+            title: 'Predicted Salary vs. Age',
+            xaxis:{ title:'Age' }, yaxis:{ title:'Salary ($)' }
+          }}
+        />
+      )}
+
+      {singleSalary != null && (
+        <div style={{ marginTop:20 }}>
+          <h2>Estimated Salary:</h2>
+          <p style={{ fontSize:24 }}>
+            <strong>${singleSalary.toLocaleString(undefined,{maximumFractionDigits:2})}</strong>
+          </p>
         </div>
       )}
     </div>
