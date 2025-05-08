@@ -16,54 +16,62 @@ CORS(app, resources={r"/*": {"origins": ["https://tranle1411.github.io"]}})
 @app.route('/predict_form', methods=['POST'])
 def predict_form():
     try:
-        data = request.get_json(force=True)
+        data = request.get_json()
         mode = data.get('mode', 'advanced')
-        user_inputs = data['inputs'].copy()
+        user_inputs = data['inputs']
 
-        # build batch of ages 25–64
-        ages_list = list(range(25, 65))
+        # build one row per age from 25-64
+        ages = list(range(25, 65))
         batch = []
-        for a in ages_list:
+        for a in ages:
             row = user_inputs.copy()
             row['AGE'] = a
             batch.append(row)
         df = pd.DataFrame(batch)
 
-        # encode & load model
+        # encode
         df = encoder.one_hot_encoder(df, mode=mode)
         df = encoder.target_encoder(df)
+
+        # pick model & features
         if mode == 'advanced':
             model_file = "advanced_xgb_model.pkl"
-            features = [...]
+            features = [
+                'SEX','AGE','MARST','VETSTAT','HISPAN',
+                'CITIZEN','SPEAKENG','OCC','IND','EDUC',
+                'DEGFIELD1','DEGFIELD2','RACE','WORKSTATE'
+            ]
         else:
             model_file = "basic_xgb_model.pkl"
-            features = [...]
-        model = joblib.load(os.path.join(os.path.dirname(__file__), "model", model_file))
-        df = df[features]
+            features = ['AGE','OCC','IND','DEGFIELD1','EDUC','WORKSTATE']
+
+        model_path = os.path.join(os.path.dirname(__file__), "model", model_file)
+        model = joblib.load(model_path)
 
         # predict and exponentiate
-        raw_preds = model.predict(df)            # numpy.ndarray of float32
-        salaries_list = [float(np.exp(p)) for p in raw_preds]  # Python floats
+        preds = model.predict(df[features])
+        salaries = list(np.exp(preds))
 
-        # return JSON
-        resp = jsonify({
-            "ages": ages_list,
-            "salaries": salaries_list,
-            "info": []
+        # empty for now—later populate with your delta‐information
+        info = []
+        if not isinstance(ages, list) or not isinstance(salaries, list):
+            raise ValueError("ages or salaries not lists")
+
+        return jsonify({
+            "ages": ages,
+            "salaries": salaries,
+            "info": info
         })
-        resp.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
-        return resp
 
     except Exception as e:
         app.logger.exception("❌ /predict_form failed")
-        # even on error, return JSON with the right shape
+        # ALWAYS return the same shape, even on error:
         return jsonify({
-            "ages": [],
-            "salaries": [],
-            "info": [],
-            "error": str(e)
+          "ages":  [],
+          "salaries": [],
+          "info":    [],
+          "error":   str(e)
         }), 500
-
 
 @app.route('/')
 def home():
