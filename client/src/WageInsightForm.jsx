@@ -30,7 +30,7 @@ const prettyLabels = {
   WORKSTATE: "Work State"
 };
 
-export default function WageInsightForm() {
+function WageInsightForm() {
   const [mode, setMode] = useState('basic');
   const [fields, setFields] = useState(basicFields);
   const [options, setOptions] = useState({});
@@ -41,29 +41,29 @@ export default function WageInsightForm() {
 
   // load dropdown options once
   useEffect(() => {
-    const prefix = process.env.PUBLIC_URL + '/options/';
     async function loadAll() {
+      const prefix = "/options/";
       const loaded = {
-        OCC:    await loadCsvOptions(prefix + "occupation.csv"),
-        IND:    await loadCsvOptions(prefix + "industry.csv"),
-        EDUC:   await loadCsvOptions(prefix + "educ.csv"),
+        OCC: await loadCsvOptions(prefix + "occupation.csv"),
+        IND: await loadCsvOptions(prefix + "industry.csv"),
+        EDUC: await loadCsvOptions(prefix + "educ.csv"),
         DEGFIELD1: await loadCsvOptions(prefix + "degree.csv"),
         DEGFIELD2: await loadCsvOptions(prefix + "degree.csv"),
-        RACE:   await loadCsvOptions(prefix + "race.csv"),
+        RACE: await loadCsvOptions(prefix + "race.csv"),
         WORKSTATE: await loadCsvOptions(prefix + "state.csv"),
-        SEX:    ['Man','Woman'],
-        MARST:  ['Married','Not married'],
-        VETSTAT:['Veteran','Not a veteran'],
+        SEX: ['Man','Woman'],
+        MARST: ['Married','Not married'],
+        VETSTAT: ['Veteran','Not a veteran'],
         HISPAN: ['Hispanic','Not Hispanic'],
-        CITIZEN:['Citizen','Not citizen'],
-        SPEAKENG:['Speaks English','Does not speak English']
+        CITIZEN: ['Citizen','Not citizen'],
+        SPEAKENG: ['Speaks English','Does not speak English']
       };
       setOptions(loaded);
     }
     loadAll();
   }, []);
 
-  // update fields when mode toggles
+  // update which fields to render when mode changes
   useEffect(() => {
     setFields(mode === 'basic' ? basicFields : advancedFields);
     setForm({});
@@ -77,6 +77,7 @@ export default function WageInsightForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // require all dropdowns filled
     if (fields.some(f => !form[f])) {
       alert("Please select a value for every field.");
       return;
@@ -89,6 +90,7 @@ export default function WageInsightForm() {
         body: JSON.stringify({ mode, inputs: form })
       });
       const data = await resp.json();
+      // expect { ages: [...], salaries: [...], info: [...] }
       setCurve({ ages: data.ages, salaries: data.salaries });
       setInfo(data.info);
     } catch (err) {
@@ -103,20 +105,23 @@ export default function WageInsightForm() {
     <div className="App">
       <h1>WageInsight Salary Curve</h1>
 
+      {/* centered form */}
       <div className="formContainer">
         <form onSubmit={handleSubmit}>
           <div>
             <label>
               <strong>Mode:&nbsp;</strong>
-              <select value={mode} onChange={e => setMode(e.target.value)}>
+              <select
+                value={mode}
+                onChange={e => setMode(e.target.value)}
+              >
                 <option value="basic">Basic</option>
                 <option value="advanced">Advanced</option>
               </select>
             </label>
           </div>
-
           {fields.map(f => (
-            <div key={f} className="fieldRow">
+            <div key={f}>
               <Autocomplete
                 options={options[f] || []}
                 getOptionLabel={o => o}
@@ -134,18 +139,20 @@ export default function WageInsightForm() {
               />
             </div>
           ))}
-
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={loading}
-          >
-            {loading ? 'Predicting…' : 'Predict Salary Curve'}
-          </Button>
+          <div>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? 'Predicting…' : 'Predict Salary Curve'}
+            </Button>
+          </div>
         </form>
       </div>
 
+      {/* dashboard */}
       {curve.ages.length > 0 && (
         <div className="dashboard">
           <div className="chart">
@@ -155,13 +162,13 @@ export default function WageInsightForm() {
                 y: curve.salaries,
                 type: 'scatter',
                 mode: 'lines+markers',
-                hovertemplate: 'Age: %{x}<br>Salary: $%{y:,.0f}<extra></extra>'
+                hovertemplate:
+                  'Age: %{x}<br>Salary: $%{y:,.0f}<extra></extra>'
               }]}
               layout={{
                 margin: { t: 20, b: 40, l: 40, r: 20 },
                 xaxis: { title: 'Age' },
-                yaxis: { title: 'Predicted Salary' },
-                autosize: true
+                yaxis: { title: 'Predicted Salary' }
               }}
               style={{ width: '100%', height: '100%' }}
             />
@@ -180,3 +187,5 @@ export default function WageInsightForm() {
     </div>
   );
 }
+
+export default WageInsightForm;
