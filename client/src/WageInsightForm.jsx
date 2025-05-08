@@ -1,6 +1,8 @@
-// src/WageInsightForm.jsx
 import React, { useState, useEffect } from 'react';
-import { Autocomplete, TextField, Button, MenuItem, Select, InputLabel, FormControl, CircularProgress } from '@mui/material';
+import {
+  Autocomplete, TextField, Button,
+  MenuItem, Select, InputLabel, FormControl, CircularProgress
+} from '@mui/material';
 import Plot from 'react-plotly.js';
 import { loadCsvOptions } from './utils/loadCsvOptions';
 import './App.css';
@@ -14,19 +16,19 @@ const advancedFields = [
 ];
 
 const prettyLabels = {
-  SEX: "Gender",
-  MARST: "Marital Status",
-  VETSTAT: "Veteran Status",
-  HISPAN: "Hispanic Origin",
-  CITIZEN: "Citizenship",
+  SEX:      "Gender",
+  MARST:    "Marital Status",
+  VETSTAT:  "Veteran Status",
+  HISPAN:   "Hispanic Origin",
+  CITIZEN:  "Citizenship",
   SPEAKENG: "English Fluency",
-  OCC: "Occupation",
-  IND: "Industry",
-  EDUC: "Education Level",
-  DEGFIELD1: "1st Degree Field",
-  DEGFIELD2: "2nd Degree Field",
-  RACE: "Race",
-  WORKSTATE: "Work State"
+  OCC:      "Occupation",
+  IND:      "Industry",
+  EDUC:     "Education Level",
+  DEGFIELD1:"1st Degree Field",
+  DEGFIELD2:"2nd Degree Field",
+  RACE:     "Race",
+  WORKSTATE:"Work State"
 };
 
 // If you need a custom order for EDUC:
@@ -40,26 +42,27 @@ const EDUC_ORDER = [
 ];
 
 export default function WageInsightForm() {
-  const [mode, setMode] = useState('basic');
-  const [options, setOptions] = useState({});
-  const [inputs, setInputs] = useState({});
-  const [series, setSeries] = useState(null);
-  const [singleSalary, setSingleSalary] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [mode, setMode]         = useState('basic');
+  const [options, setOptions]   = useState({});
+  const [inputs, setInputs]     = useState({});
+  const [series, setSeries]     = useState(null);
+  const [info, setInfo]         = useState([]);
+  const [loading, setLoading]   = useState(false);
 
   const fields = mode === 'basic' ? basicFields : advancedFields;
 
+  // load CSV dropdowns once
   useEffect(() => {
     async function loadAll() {
-      const prefix = "/wageinsight/options/";
-      const opts = {
-        OCC: await loadCsvOptions(prefix + "occupation.csv"),
-        IND: await loadCsvOptions(prefix + "industry.csv"),
-        EDUC: await loadCsvOptions(prefix + "educ.csv"),
-        DEGFIELD1: await loadCsvOptions(prefix + "degree.csv"),
-        DEGFIELD2: await loadCsvOptions(prefix + "degree.csv"),
-        RACE: await loadCsvOptions(prefix + "race.csv"),
-        WORKSTATE: await loadCsvOptions(prefix + "state.csv"),
+      const p = "/wageinsight/options/";
+      const o = {
+        OCC: await loadCsvOptions(p+"occupation.csv"),
+        IND: await loadCsvOptions(p+"industry.csv"),
+        EDUC: await loadCsvOptions(p+"educ.csv"),
+        DEGFIELD1: await loadCsvOptions(p+"degree.csv"),
+        DEGFIELD2: await loadCsvOptions(p+"degree.csv"),
+        RACE: await loadCsvOptions(p+"race.csv"),
+        WORKSTATE: await loadCsvOptions(p+"state.csv"),
         SEX: ['Man','Woman'],
         MARST: ['Married','Not married'],
         VETSTAT: ['Veteran','Not a veteran'],
@@ -67,60 +70,52 @@ export default function WageInsightForm() {
         CITIZEN: ['Citizen','Not citizen'],
         SPEAKENG: ['Speaks English','Does not speak English']
       };
-
+      
       // override EDUC order if desired
-      opts.EDUC = EDUC_ORDER.filter(x => opts.EDUC.includes(x)).concat(
-        opts.EDUC.filter(x => !EDUC_ORDER.includes(x))
+      o.EDUC = EDUC_ORDER.filter(x => o.EDUC.includes(x)).concat(
+        o.EDUC.filter(x => !EDUC_ORDER.includes(x))
       );
-
-      setOptions(opts);
+      setOptions(o);
     }
     loadAll();
   }, []);
 
-  const handleChange = (field) => (_, value) => {
+  // when mode toggles, clear state
+  const handleModeChange = e => {
+    setMode(e.target.value);
+    setInputs({});
+    setSeries(null);
+    setInfo([]);
+  };
+
+  const handleChange = field => (_, value) => {
     setInputs(i => ({ ...i, [field]: value }));
   };
 
-  const handleModeChange = (e) => {
-    setMode(e.target.value);
-    setInputs({});       // clear previous inputs
-    setSeries(null);
-    setSingleSalary(null);
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    // validate
+    // ensure all filled
     for (let f of fields) {
       if (!inputs[f]) {
-        alert(`Please select ${prettyLabels[f] || f}`);
+        alert(`Please select ${prettyLabels[f]||f}`);
         return;
       }
     }
-
     setLoading(true);
     setSeries(null);
-    setSingleSalary(null);
-
+    setInfo([]);
     try {
       const resp = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ mode, inputs })
       });
       const data = await resp.json();
-
-      if (data.series) {
-        setSeries(data.series);
-      } else if (data.salary) {
-        setSingleSalary(data.salary);
-      } else if (data.prediction) {
-        setSingleSalary(data.prediction);
-      }
+      if (data.series) setSeries(data.series);
+      if (data.info)   setInfo(data.info);
     } catch(err) {
       console.error(err);
-      alert("Prediction failed, see console.");
+      alert("Prediction failed, check console");
     } finally {
       setLoading(false);
     }
@@ -129,7 +124,8 @@ export default function WageInsightForm() {
   return (
     <div className="App">
       <h1>WageInsight Dashboard</h1>
-      <FormControl sx={{ minWidth:120, marginBottom:2 }}>
+
+      <FormControl sx={{ minWidth: 120, mb: 2 }}>
         <InputLabel>Mode</InputLabel>
         <Select value={mode} label="Mode" onChange={handleModeChange}>
           <MenuItem value="basic">Basic</MenuItem>
@@ -138,17 +134,17 @@ export default function WageInsightForm() {
       </FormControl>
 
       <form onSubmit={handleSubmit}>
-        {fields.map(field => (
+        {fields.map(f => (
           <Autocomplete
-            key={field}
-            options={options[field]||[]}
-            getOptionLabel={opt=>opt}
-            onChange={handleChange(field)}
-            value={inputs[field]||null}
-            renderInput={params => (
+            key={f}
+            options={options[f]||[]}
+            getOptionLabel={o=>o}
+            value={inputs[f]||null}
+            onChange={handleChange(f)}
+            renderInput={params=>(
               <TextField
                 {...params}
-                label={prettyLabels[field]||field}
+                label={prettyLabels[f]||f}
                 variant="outlined"
                 margin="normal"
                 required
@@ -162,33 +158,41 @@ export default function WageInsightForm() {
           variant="contained"
           color="primary"
           disabled={loading}
+          sx={{ mt: 2 }}
         >
-          {loading ? <CircularProgress size={24}/> : "Predict Salary"}
+          {loading
+            ? <CircularProgress size={24}/>
+            : "Predict Salary"}
         </Button>
       </form>
 
+      {/* line plot */}
       {series && (
         <Plot
           data={[{
-            x: series.map(pt=>pt.age),
-            y: series.map(pt=>pt.salary),
-            type: 'scatter', mode: 'lines+markers',
-            marker: { size:6 }
+            x: series.map(p=>p.age),
+            y: series.map(p=>p.salary),
+            type:'scatter', mode:'lines+markers',
+            hovertemplate:'Age: %{x}<br>Salary: $%{y:,.0f}<extra></extra>'
           }]}
           layout={{
-            width: 700, height: 400,
-            title: 'Predicted Salary vs. Age',
-            xaxis:{ title:'Age' }, yaxis:{ title:'Salary ($)' }
+            width:700, height:400,
+            title:'Predicted Salary vs. Age',
+            xaxis:{title:'Age'}, yaxis:{title:'Salary ($)'}
           }}
         />
       )}
 
-      {singleSalary != null && (
-        <div style={{ marginTop:20 }}>
-          <h2>Estimated Salary:</h2>
-          <p style={{ fontSize:24 }}>
-            <strong>${singleSalary.toLocaleString(undefined,{maximumFractionDigits:2})}</strong>
-          </p>
+      {/* info panel */}
+      {info.length > 0 && (
+        <div className="infoPanel" style={{ marginTop: '1rem', textAlign:'left' }}>
+          {info.map((it,i)=>(
+            <p key={i}>
+              On median, <strong>{it.you}</strong> {it.label} make{' '}
+              <strong>${it.delta.toLocaleString(undefined,{maximumFractionDigits:2})}</strong>{' '}
+              {it.more ? 'more' : 'less'} than <strong>{it.other}</strong>.
+            </p>
+          ))}
         </div>
       )}
     </div>
