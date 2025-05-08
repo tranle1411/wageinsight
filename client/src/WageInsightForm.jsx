@@ -1,16 +1,6 @@
 // src/WageInsightForm.jsx
-
 import React, { useState, useEffect } from 'react';
-import {
-  Autocomplete,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  CircularProgress
-} from '@mui/material';
+import { Autocomplete, TextField, Button, MenuItem, Select, InputLabel, FormControl, CircularProgress } from '@mui/material';
 import Plot from 'react-plotly.js';
 import { loadCsvOptions } from './utils/loadCsvOptions';
 import './App.css';
@@ -39,7 +29,7 @@ const prettyLabels = {
   WORKSTATE: "Work State"
 };
 
-// custom order for EDUC if needed
+// If you need a custom order for EDUC:
 const EDUC_ORDER = [
   "N/A or no schooling",
   "Nursery school to grade 4",
@@ -53,14 +43,13 @@ export default function WageInsightForm() {
   const [mode, setMode] = useState('basic');
   const [options, setOptions] = useState({});
   const [inputs, setInputs] = useState({});
-  const [series, setSeries] = useState([]);
-  const [info, setInfo] = useState([]);
+  const [series, setSeries] = useState(null);
+  const [singleSalary, setSingleSalary] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const fields = mode === 'basic' ? basicFields : advancedFields;
 
   useEffect(() => {
-    // fetch all dropdown options once
     async function loadAll() {
       const prefix = "/wageinsight/options/";
       const opts = {
@@ -78,32 +67,31 @@ export default function WageInsightForm() {
         CITIZEN: ['Citizen','Not citizen'],
         SPEAKENG: ['Speaks English','Does not speak English']
       };
-      // enforce custom EDUC ordering
-      opts.EDUC = EDUC_ORDER.filter(x => opts.EDUC.includes(x))
-        .concat(opts.EDUC.filter(x => !EDUC_ORDER.includes(x)));
+
+      // override EDUC order if desired
+      opts.EDUC = EDUC_ORDER.filter(x => opts.EDUC.includes(x)).concat(
+        opts.EDUC.filter(x => !EDUC_ORDER.includes(x))
+      );
+
       setOptions(opts);
     }
     loadAll();
   }, []);
 
-  // reset inputs/outputs when mode changes
-  useEffect(() => {
-    setInputs({});
-    setSeries([]);
-    setInfo([]);
-  }, [mode]);
-
-  const handleInputChange = field => (_, value) => {
-    setInputs(inp => ({ ...inp, [field]: value || '' }));
+  const handleChange = (field) => (_, value) => {
+    setInputs(i => ({ ...i, [field]: value }));
   };
 
-  const handleModeChange = e => {
+  const handleModeChange = (e) => {
     setMode(e.target.value);
+    setInputs({});       // clear previous inputs
+    setSeries(null);
+    setSingleSalary(null);
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // ensure all fields filled
+    // validate
     for (let f of fields) {
       if (!inputs[f]) {
         alert(`Please select ${prettyLabels[f] || f}`);
@@ -112,8 +100,8 @@ export default function WageInsightForm() {
     }
 
     setLoading(true);
-    setSeries([]);
-    setInfo([]);
+    setSeries(null);
+    setSingleSalary(null);
 
     try {
       const resp = await fetch(API_URL, {
@@ -123,16 +111,16 @@ export default function WageInsightForm() {
       });
       const data = await resp.json();
 
-      // expect backend to return: { series: [...], info: [...] }
       if (data.series) {
         setSeries(data.series);
-      }
-      if (data.info) {
-        setInfo(data.info);
+      } else if (data.salary) {
+        setSingleSalary(data.salary);
+      } else if (data.prediction) {
+        setSingleSalary(data.prediction);
       }
     } catch(err) {
       console.error(err);
-      alert("Prediction failed; see console for details.");
+      alert("Prediction failed, see console.");
     } finally {
       setLoading(false);
     }
@@ -141,82 +129,66 @@ export default function WageInsightForm() {
   return (
     <div className="App">
       <h1>WageInsight Dashboard</h1>
+      <FormControl sx={{ minWidth:120, marginBottom:2 }}>
+        <InputLabel>Mode</InputLabel>
+        <Select value={mode} label="Mode" onChange={handleModeChange}>
+          <MenuItem value="basic">Basic</MenuItem>
+          <MenuItem value="advanced">Advanced</MenuItem>
+        </Select>
+      </FormControl>
 
-      <div className="formContainer">
-        <form onSubmit={handleSubmit}>
-          <FormControl sx={{ minWidth: 140, marginRight: 2 }}>
-            <InputLabel>Mode</InputLabel>
-            <Select value={mode} label="Mode" onChange={handleModeChange}>
-              <MenuItem value="basic">Basic</MenuItem>
-              <MenuItem value="advanced">Advanced</MenuItem>
-            </Select>
-          </FormControl>
+      <form onSubmit={handleSubmit}>
+        {fields.map(field => (
+          <Autocomplete
+            key={field}
+            options={options[field]||[]}
+            getOptionLabel={opt=>opt}
+            onChange={handleChange(field)}
+            value={inputs[field]||null}
+            renderInput={params => (
+              <TextField
+                {...params}
+                label={prettyLabels[field]||field}
+                variant="outlined"
+                margin="normal"
+                required
+              />
+            )}
+          />
+        ))}
 
-          {fields.map(field => (
-            <Autocomplete
-              key={field}
-              sx={{ width: 250, marginRight: 2 }}
-              options={options[field] || []}
-              getOptionLabel={opt=>opt}
-              value={inputs[field]||null}
-              onChange={handleInputChange(field)}
-              renderInput={params => (
-                <TextField
-                  {...params}
-                  label={prettyLabels[field]||field}
-                  variant="outlined"
-                  size="small"
-                  required
-                />
-              )}
-            />
-          ))}
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={loading}
+        >
+          {loading ? <CircularProgress size={24}/> : "Predict Salary"}
+        </Button>
+      </form>
 
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            sx={{ height: 40 }}
-            disabled={loading}
-          >
-            {loading
-              ? <CircularProgress size={24} color="inherit" />
-              : "Predict Salary Curve"}
-          </Button>
-        </form>
-      </div>
+      {series && (
+        <Plot
+          data={[{
+            x: series.map(pt=>pt.age),
+            y: series.map(pt=>pt.salary),
+            type: 'scatter', mode: 'lines+markers',
+            marker: { size:6 }
+          }]}
+          layout={{
+            width: 700, height: 400,
+            title: 'Predicted Salary vs. Age',
+            xaxis:{ title:'Age' }, yaxis:{ title:'Salary ($)' }
+          }}
+        />
+      )}
 
-      {/* once we have results, show dashboard */}
-      {series.length > 0 && (
-        <div className="dashboard">
-          <div className="chart">
-            <Plot
-              data={[{
-                x: series.map(pt => pt.age),
-                y: series.map(pt => pt.salary),
-                type: 'scatter',
-                mode: 'lines+markers',
-                hovertemplate: 'Age: %{x}<br>Salary: $%{y:,.0f}<extra></extra>'
-              }]}
-              layout={{
-                width: 600,
-                height: 400,
-                margin: { t: 40, l: 50, r: 20, b: 50 },
-                xaxis: { title: 'Age' },
-                yaxis: { title: 'Predicted Salary ($)' }
-              }}
-              style={{ width: '100%', height: '100%' }}
-            />
-          </div>
-          <div className="infoPanel">
-            {info.map((it, i) => (
-              <p key={i}>
-                On median, <strong>{it.you}</strong> {it.label} make&nbsp;
-                <strong>${it.delta.toLocaleString()}</strong>&nbsp;
-                {it.more ? 'more' : 'less'} than <strong>{it.other}</strong>.
-              </p>
-            ))}
-          </div>
+      {singleSalary != null && (
+        <div style={{ marginTop:20 }}>
+          <h2>Estimated Salary:</h2>
+          <p style={{ fontSize:24 }}>
+            <strong>${singleSalary.toLocaleString(undefined,{maximumFractionDigits:2})}</strong>
+          </p>
         </div>
       )}
     </div>
