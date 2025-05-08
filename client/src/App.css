@@ -1,52 +1,54 @@
-/* src/App.css */
-
 .App {
-  font-family: sans-serif;
-  padding: 1rem;
   text-align: center;
 }
 
-h1 {
-  margin-bottom: 1rem;
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
 }
 
-/* Center the form */
-.formContainer {
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
+  font-size: calc(10px + 2vmin);
+  color: white;
 }
 
-/* Dashboard: chart on left, info on right */
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .dashboard {
   display: flex;
   align-items: flex-start;
   gap: 2rem;
 }
 
-/* Left pane (chart) */
 .chart {
-  flex: 1;
+  flex: 1;           /* take left half */
 }
 
-/* Right pane (info) */
 .infoPanel {
-  flex: 1;
-  text-align: left;
-  background: #f9f9f9;
-  padding: 1rem;
-  border-radius: 4px;
-  font-size: 0.95rem;
+  flex: 1;           /* take right half */
+  font-size: 0.9rem;
   line-height: 1.4;
-}
-
-/* Make form elements stack nicely */
-.formContainer form > div {
-  margin-bottom: 1rem;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  cursor: pointer;
 }
