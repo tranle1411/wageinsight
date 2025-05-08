@@ -9,10 +9,13 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["https://tranle1411.github.io"]}}, supports_credentials=True)
+CORS(app, resources={r"/predict_form": {"origins": ["https://tranle1411.github.io"]}}, supports_credentials=True)
 
-@app.route('/predict_form', methods=['POST'])
+@app.route('/predict_form', methods=['OPTIONS', 'POST'])
 def predict_form():
+    if request.method == 'OPTIONS':
+        return '', 204
+
     try:
         data = request.get_json()
         mode = data.get('mode', 'advanced')
