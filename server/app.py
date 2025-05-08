@@ -54,21 +54,24 @@ def predict_form():
 
         # empty for now—later populate with your delta‐information
         info = []
+        if not isinstance(ages, list) or not isinstance(salaries, list):
+            raise ValueError("ages or salaries not lists")
 
-        # return JSON with exactly these keys
-        resp = jsonify({
+        return jsonify({
             "ages": ages,
             "salaries": salaries,
             "info": info
         })
-        resp.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
-        return resp
 
     except Exception as e:
-        print("Error in /predict_form:", e)
-        err = jsonify({"error": str(e)})
-        err.headers.add("Access-Control-Allow-Origin", "https://tranle1411.github.io")
-        return err, 500
+        app.logger.exception("❌ /predict_form failed")
+        # ALWAYS return the same shape, even on error:
+        return jsonify({
+          "ages":  [],
+          "salaries": [],
+          "info":    [],
+          "error":   str(e)
+        }), 500
 
 @app.route('/')
 def home():

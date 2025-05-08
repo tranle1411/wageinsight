@@ -146,7 +146,7 @@ export default function WageInsightForm() {
         </form>
       </div>
 
-      {curve.ages.length > 0 && (
+      {Array.isArray(curve.ages) && curve.ages.length > 0 && (
         <div className="dashboard">
           <div className="chart">
             <Plot
