@@ -42,7 +42,7 @@ export default function WageInsightForm() {
   // Load dropdown options once
   useEffect(() => {
     async function loadAll() {
-      const prefix = "/options/";
+      const prefix = process.env.PUBLIC_URL + "/options/";
       const opts = {
         EDUC:      await loadCsvOptions(prefix + "educ.csv"),
         DEGFIELD1: await loadCsvOptions(prefix + "degree.csv"),
