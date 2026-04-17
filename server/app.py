@@ -13,6 +13,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["https://tranle1411.github.io"]}}, supports_credentials=True)
 
+@app.route('/health')
+def health():
+    return {"status": "ok"}, 200
+
 @app.route('/predict_form', methods=['POST'])
 def predict_form():
     try:
