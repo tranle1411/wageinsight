@@ -16,7 +16,15 @@ test("verification gates the AI request and sends a token without a raw profile"
     const body = route.request().postDataJSON();
     expect(body.token).toBe("fresh-test-token");
     expect(body.profile).toBeUndefined();
-    expect(body.effects.length).toBeLessThanOrEqual(4);
+    expect(body.effects.length).toBeLessThanOrEqual(7);
+    expect(
+      body.effects.some((e: { field: string }) => e.field === "EDUCD"),
+    ).toBeTruthy();
+    expect(
+      body.effects.some((e: { field: string }) => e.field === "OCC"),
+    ).toBeTruthy();
+    expect(body.effects[0].selected).toBeTruthy();
+    expect(body.effects[0].reference).toBeTruthy();
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({

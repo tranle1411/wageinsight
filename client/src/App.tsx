@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Turnstile } from "./Turnstile";
+import { FeatureExplanation } from "./InterpretationPanel";
+import { labeledContrasts } from "./featureExplanation";
+import { selectContrasts } from "../../shared/explanations";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -358,7 +361,7 @@ export default function App() {
     const endpoint = import.meta.env.VITE_EXPLANATION_URL;
     if (!endpoint) {
       setExplanation(
-        "Further explanation is unavailable right now. The local summary remains available.",
+        "AI commentary is not connected yet. Your feature interpretation and research context are available below.",
       );
       setExplaining(false);
       return;
@@ -383,9 +386,9 @@ export default function App() {
             upper: result.upper,
             year,
             variant,
-            effects: result.effects
-              .slice(0, 4)
-              .map((e) => ({ field: labels[e.field], delta: e.delta })),
+            effects: bundle
+              ? selectContrasts(labeledContrasts(bundle, profile, result))
+              : [],
           }),
           signal: AbortSignal.timeout(20000),
         });
@@ -422,7 +425,7 @@ export default function App() {
         if (generation === explanationRequest.current) setExplaining(false);
       }
     },
-    [result, year, variant],
+    [result, year, variant, bundle, profile],
   );
   function field(key: string) {
     if (key === "OCC" || key === "IND") {
@@ -459,6 +462,7 @@ export default function App() {
       <label className="field" key={key}>
         <span>{labels[key]}</span>
         <select
+          aria-label={labels[key]}
           value={profile[key] ?? ""}
           onChange={(e) => change(key, Number(e.target.value))}
         >
@@ -731,6 +735,13 @@ export default function App() {
                 {explain && (
                   <article className="panel explanation">
                     <h3>Reading your estimate</h3>
+                    {bundle && (
+                      <FeatureExplanation
+                        bundle={bundle}
+                        profile={profile}
+                        prediction={result}
+                      />
+                    )}
                     <p>
                       The middle estimate is a modeled median. The range
                       describes individual income variation, rather than
@@ -741,17 +752,19 @@ export default function App() {
                       this model responds. That change does not prove what
                       caused a wage gap.
                     </p>
+                    <h4>AI interpretation</h4>
                     {verifying ? (
                       <Turnstile onToken={fetchExplanation} />
                     ) : explaining ? (
                       <p role="status">Preparing further explanation…</p>
                     ) : (
-                      <p>{explanation}</p>
+                      <p className="ai-commentary">{explanation}</p>
                     )}
                     <p className="fineprint">
-                      Extended explanation sends only estimate context to the
-                      configured AI provider. No guest history is saved by this
-                      app.
+                      AI receives displayed category labels and model
+                      comparisons, including demographic labels when enabled. No
+                      guest history is saved by this app. Verification uses
+                      Cloudflare Turnstile.
                     </p>
                     <a
                       href="https://usa.ipums.org/usa-action/variables/INCWAGE"

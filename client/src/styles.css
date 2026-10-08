@@ -762,3 +762,27 @@ footer .brand {
     scroll-behavior: auto !important;
   }
 }
+.feature-explanation section {
+  margin: 18px 0;
+}
+.feature-explanation h4 {
+  color: var(--green, #184e40);
+  margin-bottom: 8px;
+}
+.feature-explanation ul {
+  padding-left: 20px;
+}
+.feature-explanation li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+.feature-explanation .research-context {
+  margin: 20px 0;
+}
+.research-context summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.ai-commentary {
+  white-space: pre-line;
+}

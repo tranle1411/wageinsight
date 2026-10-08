@@ -1,6 +1,10 @@
 # WageInsight explanation Worker
 
-Local implementation: Turnstile verification of action `explain` and exact frontend hostname before AI; expired/replayed tokens fail closed. Request bodies are bounded at 4096 bytes while streaming. No profile, token, secret, IP, or body is logged by application code. An IP is transiently sent to Siteverify and used as a rate-limit key; Turnstile is a third-party service.
+Local implementation: Turnstile verification of action `explain` and exact frontend hostname before AI; expired/replayed tokens fail closed. Request bodies are bounded at 8192 bytes while streaming. No profile, token, secret, IP, or body is logged by application code. An IP is transiently sent to Siteverify and used as a rate-limit key; Turnstile is a third-party service.
+
+The Explain panel provides deterministic education, profession, demographic (when enabled), and location comparisons even without AI. These contrast a selected category with the model's modal training category while holding other inputs fixed. They are not SHAP values, additive contributions, or causal effects. Reference combinations can be uncommon or inapplicable. AI receives up to seven labeled contrasts, with representation across groups, and curated source facts from shared/explanations.ts. These include BLS/Census findings and Goldin (2014) on job flexibility. Research facts retain date/population limitations. No online retrieval runs for each request, and live AI output grounding is not yet validated. Selected demographic labels are sent only when that model is enabled; disclose this to users.
+
+If the deployed frontend says “AI commentary is not connected yet” (or the older “The local summary remains available”), VITE_EXPLANATION_URL was absent at build time. Add it under the frontend Worker's **Build variables and secrets**, then rebuild. Runtime-only variables cannot fix an already-built Vite bundle. Redeploy both frontend and explanation Worker after this request-contract update; the new Worker expects field codes and selected/reference labels. Legacy unlabeled requests are rejected.
 
 Public origin: https://wageinsight.chantranle-2026.workers.dev
 Public site key: 0x4AAAAAAFRoPuaUHU9CkU1d

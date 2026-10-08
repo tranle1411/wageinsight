@@ -34,6 +34,21 @@ test("responsive form and local explanation work", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Reading your estimate" }),
   ).toBeVisible();
+  await expect(
+    page
+      .locator(".feature-explanation")
+      .getByRole("heading", { name: "Education", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".feature-explanation")
+      .getByRole("heading", { name: "Profession", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Demographics were not used in this estimate.", {
+      exact: false,
+    }),
+  ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -43,4 +58,37 @@ test("responsive form and local explanation work", async ({ page }) => {
     path: "test-results/" + test.info().project.name + "-results.png",
     fullPage: true,
   });
+});
+test("demographic interpretation includes labeled contrasts and research without AI", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByText("Explore demographic associations", { exact: false })
+    .click();
+  await page.getByLabel("Include demographics in this estimate").check();
+  await page
+    .getByLabel("Sex recorded in survey", { exact: true })
+    .selectOption("2");
+  await page.getByRole("button", { name: "Explore my estimate" }).click();
+  await page.getByRole("button", { name: "Explain this estimate" }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Demographic associations",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".feature-explanation")
+      .getByText(/Female:.*relative to|Female:.*higher|Female:.*lower/),
+  ).toBeVisible();
+  await page.getByText("Research context and sources", { exact: true }).click();
+  await expect(page.getByRole("link", { name: /Goldin/ })).toBeVisible();
+  await expect(page.getByText(/not proof of the cause/)).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBeTruthy();
 });

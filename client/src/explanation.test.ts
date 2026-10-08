@@ -136,7 +136,7 @@ it("rate limits before verification and before AI without reporting daily exhaus
   expect(env.AI.run).not.toHaveBeenCalled();
 });
 it("rejects oversized bodies even without Content-Length", async () => {
-  expect((await run({ ...valid, token: "x".repeat(5000) })).status).toBe(413);
+  expect((await run({ ...valid, token: "x".repeat(9000) })).status).toBe(413);
   expect(verify).not.toHaveBeenCalled();
 });
 it("localizes daily exhaustion with an explicit UTC reset timestamp", async () => {
@@ -157,4 +157,27 @@ it("does not label provider outages as daily exhaustion", async () => {
   expect(
     ((await response.json()) as { resetAt?: string }).resetAt,
   ).toBeUndefined();
+});
+it("passes labeled contrasts and relevant sourced facts to AI, without the token", async () => {
+  const env = environment();
+  const input = {
+    ...valid,
+    variant: "demographic",
+    effects: [
+      {
+        field: "EDUCD",
+        selected: "Master's degree",
+        reference: "Bachelor's degree",
+        delta: 5000,
+      },
+      { field: "SEX", selected: "Female", reference: "Male", delta: -3000 },
+    ],
+  };
+  expect((await run(input, env)).status).toBe(200);
+  const calls = JSON.stringify(env.AI.run.mock.calls);
+  expect(calls).toContain("Master's degree");
+  expect(calls).toContain("flexibility");
+  expect(calls).toContain("not proof");
+  expect(calls).not.toContain("fresh-token");
+  expect((await run({ ...input, variant: "career" }, env)).status).toBe(422);
 });
