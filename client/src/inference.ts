@@ -65,7 +65,16 @@ export function predict(
       ...values(bundle, { ...profile, AGE: i + 25 }, variant, year),
     })),
     effects: model.features
-      .filter((f) => f !== "AGE")
+      .filter(
+        (f) =>
+          f !== "AGE" &&
+          (f !== "DEGFIELD" ||
+            (profile.EDUCD >= 101 &&
+              profile.DEGFIELD > 0 &&
+              model.reference.DEGFIELD > 0)) &&
+          (f !== "EDUCD" ||
+            profile.EDUCD >= 101 === model.reference.EDUCD >= 101),
+      )
       .map((field) => ({
         field,
         delta:

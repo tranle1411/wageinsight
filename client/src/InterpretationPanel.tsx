@@ -12,10 +12,58 @@ export function FeatureExplanation({
 }) {
   const effects = labeledContrasts(bundle, profile, prediction);
   const sources = sourcesFor(effects);
+  const matching = effects.filter((e) => e.selected === e.reference);
+  const comparable = effects.filter((e) => e.selected !== e.reference);
+  const names: Record<string, string> = {
+    EDUCD: "education level",
+    DEGFIELD: "degree field",
+    OCC: "occupation",
+    IND: "industry",
+    SEX: "sex",
+    RACE: "race",
+    HISPAN: "Hispanic origin",
+    MARST: "marital status",
+    CITIZEN: "citizenship",
+    SPEAKENG: "English proficiency",
+    VETSTAT: "veteran status",
+    STATEFIP: "state",
+  };
   return (
     <div className="feature-explanation">
+      <p>
+        Your full profile's modeled median is{" "}
+        {new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 0,
+        }).format(prediction.estimate)}
+        . This is not a group median for any single characteristic.
+      </p>
+      {matching.length > 0 && (
+        <p>
+          Matching reference categories:{" "}
+          {matching.map((e) => names[e.field]).join(", ")}. Those comparisons
+          show no difference because the inputs are identical, not because these
+          features never matter.
+        </p>
+      )}
+      {profile.EDUCD >= 101 &&
+        bundle.variants[prediction.variant].reference.DEGFIELD === 0 && (
+          <p>
+            No degree-field contrast is shown: the reference has no applicable
+            degree field, which is incompatible with holding your
+            bachelor's-or-higher education fixed.
+          </p>
+        )}
+      {profile.EDUCD >= 101 !==
+        bundle.variants[prediction.variant].reference.EDUCD >= 101 && (
+        <p>
+          No education-level contrast is shown because changing it alone would
+          make the degree-field combination inconsistent.
+        </p>
+      )}
       {["education", "profession", "demographics", "location"].map((group) => {
-        const list = effects.filter((e) => featureGroups[e.field] === group);
+        const list = comparable.filter((e) => featureGroups[e.field] === group);
         if (!list.length) return null;
         return (
           <section key={group}>
@@ -23,7 +71,7 @@ export function FeatureExplanation({
               {
                 {
                   education: "Education",
-                  profession: "Profession",
+                  profession: "Occupation and industry",
                   demographics: "Demographic associations",
                   location: "Location",
                 }[group]
@@ -44,11 +92,10 @@ export function FeatureExplanation({
         </p>
       )}
       <p className="help">
-        Each contrast uses the model's most common training category as a
-        reference. Zero is not evidence that a feature never matters. These are
+        Each displayed contrast uses the model's reference category with other
+        inputs fixed. Incompatible education comparisons are omitted. These are
         separate model comparisons, not additive contributions, causal effects,
-        or SHAP values. Some reference combinations may be uncommon or
-        inapplicable to your profile.
+        or SHAP values. Other combinations may still be uncommon in the data.
       </p>
       <details className="research-context">
         <summary>Research context and sources</summary>

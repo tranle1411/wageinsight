@@ -37,12 +37,12 @@ test("responsive form and local explanation work", async ({ page }) => {
   await expect(
     page
       .locator(".feature-explanation")
-      .getByRole("heading", { name: "Education", exact: true }),
+      .getByText(/Matching reference categories:/),
   ).toBeVisible();
   await expect(
     page
       .locator(".feature-explanation")
-      .getByRole("heading", { name: "Profession", exact: true }),
+      .getByText(/No degree-field contrast is shown:/),
   ).toBeVisible();
   await expect(
     page.getByText("Demographics were not used in this estimate.", {

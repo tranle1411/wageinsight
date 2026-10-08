@@ -69,3 +69,32 @@ export function selectContrasts(effects: Contrast[]) {
         .slice(0, group === "location" ? 1 : 2),
   );
 }
+export function selectResearch(
+  answer: string,
+  allowed: ReturnType<typeof sourcesFor>,
+) {
+  try {
+    const parsed = JSON.parse(
+      answer
+        .trim()
+        .replace(/^```(?:json)?\s*/, "")
+        .replace(/\s*```$/, ""),
+    ) as { sourceIds?: unknown };
+    if (
+      !Array.isArray(parsed.sourceIds) ||
+      parsed.sourceIds.length === 0 ||
+      parsed.sourceIds.length > 2 ||
+      parsed.sourceIds.some(
+        (id) =>
+          typeof id !== "string" || !allowed.some((source) => source.id === id),
+      )
+    )
+      throw Error("invalid selection");
+    const selected = [...new Set(parsed.sourceIds)].map(
+      (id) => allowed.find((source) => source.id === id)!,
+    );
+    return { selected, method: "ai" };
+  } catch {
+    return { selected: allowed.slice(0, 2), method: "curated-fallback" };
+  }
+}

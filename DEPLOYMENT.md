@@ -17,7 +17,7 @@ User actions: create a free Supabase project; configure Google/GitHub OAuth cred
 
 ## Optional extended explanations
 
-Turnstile verification and per-location request limits are now implemented. Follow [worker/README.md](worker/README.md) for the separate explanation Worker, private secret, production origin, frontend build variables, and live validation. Explanations default to disabled until configuration is ready. The current frontend is deployed as Workers Static Assets; use its workers.dev origin for authentication and AI configuration rather than a Pages example URL.
+Turnstile verification and per-location request limits are implemented. Follow [worker/README.md](worker/README.md) for the separate explanation Worker, private secret, production origin, frontend build variables, and live validation. The enable flag now persists true after the user's live integration check; missing secrets/bindings still fail closed. AI selects approved research passages; numerical comparisons remain deterministic. The frontend is deployed as Workers Static Assets; use its workers.dev origin for authentication and AI configuration rather than a Pages example URL.
 
 The worker directory contains a Cloudflare AI adapter. User action: create/connect a Cloudflare account. Install the pinned worker dependency, update ALLOWED_ORIGIN to the exact frontend origin, then deploy through Wrangler after local checks. Set VITE_EXPLANATION_URL on the frontend to the deployed route.
 

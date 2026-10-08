@@ -181,3 +181,31 @@ it("passes labeled contrasts and relevant sourced facts to AI, without the token
   expect(calls).not.toContain("fresh-token");
   expect((await run({ ...input, variant: "career" }, env)).status).toBe(422);
 });
+it("never displays AI-generated group medians; returns only approved research passages", async () => {
+  const env = environment();
+  env.AI.run.mockResolvedValue({
+    response: "The median income of all business graduates is $111458.",
+  });
+  const response = await run(
+    {
+      ...valid,
+      effects: [
+        {
+          field: "EDUCD",
+          selected: "Bachelor's degree",
+          reference: "Bachelor's degree",
+          delta: 0,
+        },
+      ],
+    },
+    env,
+  );
+  const output = (await response.json()) as {
+    text: string;
+    selectionMethod: string;
+  };
+  expect(output.text).not.toContain("111458");
+  expect(output.text).toContain("[education]");
+  expect(output.selectionMethod).toBe("curated-fallback");
+  expect(JSON.stringify(env.AI.run.mock.calls)).not.toContain('"estimate":');
+});

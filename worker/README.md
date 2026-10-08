@@ -2,7 +2,9 @@
 
 Local implementation: Turnstile verification of action `explain` and exact frontend hostname before AI; expired/replayed tokens fail closed. Request bodies are bounded at 8192 bytes while streaming. No profile, token, secret, IP, or body is logged by application code. An IP is transiently sent to Siteverify and used as a rate-limit key; Turnstile is a third-party service.
 
-The Explain panel provides deterministic education, profession, demographic (when enabled), and location comparisons even without AI. These contrast a selected category with the model's modal training category while holding other inputs fixed. They are not SHAP values, additive contributions, or causal effects. Reference combinations can be uncommon or inapplicable. AI receives up to seven labeled contrasts, with representation across groups, and curated source facts from shared/explanations.ts. These include BLS/Census findings and Goldin (2014) on job flexibility. Research facts retain date/population limitations. No online retrieval runs for each request, and live AI output grounding is not yet validated. Selected demographic labels are sent only when that model is enabled; disclose this to users.
+The Explain panel provides deterministic education, occupation/industry, demographic (when enabled), and location comparisons even without AI. Incompatible degree-field references and education-level changes that cross degree eligibility are omitted, including when viewing legacy saved contrasts. Matching reference categories are summarized once. Valid contrasts hold other inputs fixed; they are not SHAP values, additive contributions, or causal effects. Other reference combinations can still be uncommon.
+
+AI is now a research-source selector, not a numerical narrator. It receives selected/reference category labels and approved research facts, but no salary estimates or dollar contrasts. It may select at most two approved source IDs. The server displays only their curated facts and citations; malformed selections fall back to curated passages. Generated prose, invented salary figures and unknown sources never enter the displayed research text. Sources include BLS/Census and Goldin (2014), with date/population limitations. No per-request web retrieval runs. Selected demographic labels are sent only when that model is enabled. Live selection relevance still needs human review.
 
 If the deployed frontend says “AI commentary is not connected yet” (or the older “The local summary remains available”), VITE_EXPLANATION_URL was absent at build time. Add it under the frontend Worker's **Build variables and secrets**, then rebuild. Runtime-only variables cannot fix an already-built Vite bundle. Redeploy both frontend and explanation Worker after this request-contract update; the new Worker expects field codes and selected/reference labels. Legacy unlabeled requests are rejected.
 
@@ -34,9 +36,9 @@ Create a separate Worker linked to the same repository, named `wageinsight-expla
 - Wrangler reads `wrangler.toml`; do not use the frontend static-assets deploy command.
 - Stay on Workers Free. No paid billing method or AI Gateway prepaid credits are required for the selected model.
 
-The initial deployment has `EXPLANATIONS_ENABLED=false`. In the explanation Worker's Settings -> Variables and Secrets, add the Turnstile widget's private secret as a **Secret** named `TURNSTILE_SECRET_KEY`. Paste it directly from your Turnstile dashboard; never put it in chat, source, or a VITE variable.
+The configuration now persists `EXPLANATIONS_ENABLED=true` after the user verified the live integration. Missing secrets or verification bindings still fail closed. In the explanation Worker's Settings -> Variables and Secrets, add the Turnstile widget's private secret as a **Secret** named `TURNSTILE_SECRET_KEY` if absent. Paste it directly from your Turnstile dashboard; never put it in chat, source, or a VITE variable.
 
-After saving the secret, set runtime `EXPLANATIONS_ENABLED=true`. Keep the committed default false for safe redeployments; Wrangler may restore it on subsequent deploys, so check this flag each time. Change it to false for an immediate kill switch.
+Deployments no longer reset explanations to false. Change runtime EXPLANATIONS_ENABLED to false for an immediate kill switch, and also update wrangler.toml to false if it must remain disabled across future deployments.
 
 Verify the AI, IP_LIMITER, and AI_LIMITER bindings exist. Secret storage must target `wageinsight-explanations`, not the frontend Worker.
 

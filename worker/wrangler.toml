@@ -6,7 +6,7 @@ binding = "AI"
 [vars]
 ALLOWED_ORIGIN = "https://wageinsight.chantranle-2026.workers.dev"
 TURNSTILE_HOSTNAME = "wageinsight.chantranle-2026.workers.dev"
-EXPLANATIONS_ENABLED = "false"
+EXPLANATIONS_ENABLED = "true"
 
 [[ratelimits]]
 name = "IP_LIMITER"

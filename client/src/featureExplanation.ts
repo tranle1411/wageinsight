@@ -11,7 +11,16 @@ export function labeledContrasts(
     bundle.options[field]?.find((o) => o.value === value)?.label ??
     "Unknown category";
   return prediction.effects
-    .filter((e) => featureGroups[e.field])
+    .filter(
+      (e) =>
+        featureGroups[e.field] &&
+        (e.field !== "DEGFIELD" ||
+          (profile.EDUCD >= 101 &&
+            profile.DEGFIELD > 0 &&
+            model.reference.DEGFIELD > 0)) &&
+        (e.field !== "EDUCD" ||
+          profile.EDUCD >= 101 === model.reference.EDUCD >= 101),
+    )
     .map((e) => ({
       ...e,
       selected: label(e.field, profile[e.field]),

@@ -752,7 +752,7 @@ export default function App() {
                       this model responds. That change does not prove what
                       caused a wage gap.
                     </p>
-                    <h4>AI interpretation</h4>
+                    <h4>Research interpretation</h4>
                     {verifying ? (
                       <Turnstile onToken={fetchExplanation} />
                     ) : explaining ? (
@@ -761,10 +761,11 @@ export default function App() {
                       <p className="ai-commentary">{explanation}</p>
                     )}
                     <p className="fineprint">
-                      AI receives displayed category labels and model
-                      comparisons, including demographic labels when enabled. No
-                      guest history is saved by this app. Verification uses
-                      Cloudflare Turnstile.
+                      AI receives category labels and curated source facts,
+                      including demographic labels when enabled. No guest
+                      history is saved by this app. Verification uses Cloudflare
+                      Turnstile. Numerical interpretation is calculated locally;
+                      AI selects relevant curated research passages.
                     </p>
                     <a
                       href="https://usa.ipums.org/usa-action/variables/INCWAGE"
@@ -784,40 +785,45 @@ export default function App() {
                     Each field compared with its most common training category,
                     holding your other choices fixed. Changes are not additive.
                   </p>
-                  {result.effects.slice(0, 5).map((e) => (
-                    <div className="factor" key={e.field}>
-                      <div
-                        className={
-                          e.delta >= 0
-                            ? "factor-icon positive"
-                            : "factor-icon negative"
-                        }
-                      >
-                        {e.delta >= 0 ? (
-                          <ArrowUpRight size={17} />
-                        ) : (
-                          <ArrowDownRight size={17} />
-                        )}
-                      </div>
-                      <div>
-                        <strong>{labels[e.field]}</strong>
-                        <small>
-                          Versus{" "}
-                          {
-                            bundle?.options[e.field]?.find(
-                              (o) =>
-                                o.value ===
-                                bundle.variants[variant].reference[e.field],
-                            )?.label
+                  {(bundle ? labeledContrasts(bundle, profile, result) : [])
+                    .filter((e) => Math.abs(e.delta) >= 0.5)
+                    .slice(0, 5)
+                    .map((e) => (
+                      <div className="factor" key={e.field}>
+                        <div
+                          className={
+                            e.delta >= 0
+                              ? "factor-icon positive"
+                              : "factor-icon negative"
                           }
-                        </small>
+                        >
+                          {e.delta >= 0 ? (
+                            <ArrowUpRight size={17} />
+                          ) : (
+                            <ArrowDownRight size={17} />
+                          )}
+                        </div>
+                        <div>
+                          <strong>{labels[e.field]}</strong>
+                          <small>
+                            Versus{" "}
+                            {
+                              bundle?.options[e.field]?.find(
+                                (o) =>
+                                  o.value ===
+                                  bundle.variants[variant].reference[e.field],
+                              )?.label
+                            }
+                          </small>
+                        </div>
+                        <span
+                          className={e.delta >= 0 ? "positive" : "negative"}
+                        >
+                          {e.delta >= 0 ? "+" : "−"}
+                          {dollars(Math.abs(e.delta))}
+                        </span>
                       </div>
-                      <span className={e.delta >= 0 ? "positive" : "negative"}>
-                        {e.delta >= 0 ? "+" : "−"}
-                        {dollars(Math.abs(e.delta))}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
                 </article>
                 {bundle?.peers?.[String(profile.OCC)] && (
                   <article className="panel peers">
