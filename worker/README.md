@@ -4,7 +4,7 @@ Local implementation: Turnstile verification of action `explain` and exact front
 
 The Explain panel provides deterministic education, occupation/industry, demographic (when enabled), and location comparisons even without AI. Incompatible degree-field references and education-level changes that cross degree eligibility are omitted, including when viewing legacy saved contrasts. Matching reference categories are summarized once. Valid contrasts hold other inputs fixed; they are not SHAP values, additive contributions, or causal effects. Other reference combinations can still be uncommon.
 
-AI is now a research-source selector, not a numerical narrator. It receives selected/reference category labels and approved research facts, but no salary estimates or dollar contrasts. It may select at most two approved source IDs. The server displays only their curated facts and citations; malformed selections fall back to curated passages. Generated prose, invented salary figures and unknown sources never enter the displayed research text. Sources include BLS/Census and Goldin (2014), with date/population limitations. No per-request web retrieval runs. Selected demographic labels are sent only when that model is enabled. Live selection relevance still needs human review.
+AI writes personalized commentary grounded in supplied primary-source facts. It receives selected/reference categories and qualitative model directions, but no salary amounts or dollar contrasts. The response has one to three field-specific passages with approved citations. Runtime checks enforce schema, category mentions, field/source compatibility, bounded text and several unsafe-output restrictions. Invalid output falls back to curated facts. This constrains errors but does not prove semantic grounding; live human review remains necessary. Canonical links and evidence details render in the frontend. Numerical comparisons stay deterministic. No per-request web retrieval runs, and no vector database is required for this small curated corpus.
 
 If the deployed frontend says “AI commentary is not connected yet” (or the older “The local summary remains available”), VITE_EXPLANATION_URL was absent at build time. Add it under the frontend Worker's **Build variables and secrets**, then rebuild. Runtime-only variables cannot fix an already-built Vite bundle. Redeploy both frontend and explanation Worker after this request-contract update; the new Worker expects field codes and selected/reference labels. Legacy unlabeled requests are rejected.
 
@@ -58,7 +58,7 @@ Before claiming live readiness:
 1. Produce an estimate, open Explain, complete Turnstile, receive AI text.
 2. Verify a fresh real token succeeds once and replay is rejected without a second AI call.
 3. Check invalid hostname/action, expiry, disabled service, and limits.
-4. Review AI output for unsupported wage-gap history or causal claims. Prompts and fixed sources are safeguards, not validated RAG.
+4. Review personalized output across education/profession/demographic cases for faithfulness to cited evidence. Schema/citation checks do not replace human review of grounding.
 5. Confirm token/secret/profile data is absent from logs and avoid adding body logging.
 
 Docs: [Siteverify](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/), [rate limits](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/), [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/).

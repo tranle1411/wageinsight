@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Turnstile } from "./Turnstile";
 import { FeatureExplanation } from "./InterpretationPanel";
 import { labeledContrasts } from "./featureExplanation";
-import { selectContrasts } from "../../shared/explanations";
+import { research, selectContrasts } from "../../shared/explanations";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -18,15 +25,7 @@ import {
   Info,
   LoaderCircle,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+const AgeChart = lazy(() => import("./AgeChart"));
 import type { Bundle, Profile, Prediction, Scenario } from "./types";
 import { supabase } from "./auth";
 const labels: Record<string, string> = {
@@ -67,12 +66,16 @@ export default function App() {
     [explanation, setExplanation] = useState(""),
     [explaining, setExplaining] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [explanationSources, setExplanationSources] = useState<string[]>([]);
+  const [explanationMethod, setExplanationMethod] = useState("");
   const explanationRequest = useRef(0);
   useEffect(() => {
     explanationRequest.current++;
     setVerifying(false);
     setExplaining(false);
     setExplanation("");
+    setExplanationSources([]);
+    setExplanationMethod("");
   }, [result, year, variant]);
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
@@ -84,6 +87,7 @@ export default function App() {
   const worker = useRef<Worker | null>(null),
     request = useRef(0),
     resultRef = useRef<HTMLDivElement>(null);
+  const currentUser = useRef<string | null>(null);
   useEffect(() => {
     if (!authOpen) return;
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
@@ -175,11 +179,17 @@ export default function App() {
   useEffect(() => {
     if (!supabase) return;
     let active = true;
+    let authEventSeen = false;
     supabase.auth.getSession().then(({ data }) => {
-      if (active) setUser(data.session?.user.id ?? null);
+      if (active && !authEventSeen) {
+        currentUser.current = data.session?.user.id ?? null;
+        setUser(currentUser.current);
+      }
     });
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user.id ?? null);
+      authEventSeen = true;
+      currentUser.current = session?.user.id ?? null;
+      setUser(currentUser.current);
       if (event === "PASSWORD_RECOVERY") {
         setRecovering(true);
         setAuthOpen(true);
@@ -200,7 +210,7 @@ export default function App() {
       .from("predictions")
       .select("id,name,profile,prediction")
       .order("created_at", { ascending: false })
-      .limit(30)
+      .limit(100)
       .then(({ data, error }) => {
         if (!active) return;
         if (error)
@@ -272,23 +282,56 @@ export default function App() {
       profile,
       prediction: result,
     };
+    const owner = user;
     const { data, error } = await supabase
       .from("predictions")
       .insert(row)
       .select("id,name,profile,prediction")
       .single();
+    if (currentUser.current !== owner) return;
     if (error)
-      setNotice("Could not save. Please try again or export your result.");
+      setNotice(
+        error.message.includes("history limit")
+          ? "Your saved history is full. Delete a saved result or export this one."
+          : "Could not save. Please try again or export your result.",
+      );
     else {
       setHistory((h) => [data, ...h]);
       setNotice("Prediction saved to your account.");
     }
   }
   async function remove(id: string) {
-    if (!supabase) return;
+    if (!supabase || !user) return;
+    const owner = user;
     const { error } = await supabase.from("predictions").delete().eq("id", id);
+    if (currentUser.current !== owner) return;
     if (error) setNotice("Could not delete. Try again.");
     else setHistory((h) => h.filter((r) => r.id !== id));
+  }
+  function reopen(saved: { profile: Profile; prediction: Prediction }) {
+    if (
+      !bundle ||
+      saved.prediction.modelVersion !== bundle.version ||
+      !bundle.variants[saved.prediction.variant] ||
+      !saved.prediction.curve?.length
+    ) {
+      setNotice(
+        "This saved result uses an older model. Export or keep its summary; create a new estimate with the current model.",
+      );
+      return;
+    }
+    request.current++;
+    setBusy(false);
+    setSearches({});
+    setProfile({ ...saved.profile });
+    setVariant(saved.prediction.variant);
+    setYear(saved.prediction.year);
+    setResult(saved.prediction);
+    setExplain(false);
+    setNotice(
+      "Saved result reopened. Compare or export it using the result buttons.",
+    );
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function exportResults() {
     const data = {
@@ -358,6 +401,8 @@ export default function App() {
     setExplain(true);
     setExplaining(false);
     setExplanation("");
+    setExplanationSources([]);
+    setExplanationMethod("");
     const endpoint = import.meta.env.VITE_EXPLANATION_URL;
     if (!endpoint) {
       setExplanation(
@@ -396,6 +441,8 @@ export default function App() {
           text?: string;
           error?: string;
           resetAt?: string;
+          sources?: { id: string }[];
+          selectionMethod?: string;
         };
         if (generation !== explanationRequest.current) return;
         if (!response.ok) {
@@ -414,6 +461,20 @@ export default function App() {
         if (typeof data.text !== "string")
           throw Error("Further explanation is unavailable right now.");
         setExplanation(data.text);
+        setExplanationSources(
+          Array.isArray(data.sources)
+            ? data.sources
+                .map((s) => s.id)
+                .filter((id) => research.some((s) => s.id === id))
+            : [],
+        );
+        setExplanationMethod(
+          data.selectionMethod === "grounded-ai"
+            ? "AI-written commentary · cited research"
+            : data.selectionMethod === "curated-fallback"
+              ? "Curated fallback · AI output did not pass validation"
+              : "",
+        );
       } catch (e) {
         if (generation !== explanationRequest.current) return;
         setExplanation(
@@ -475,7 +536,6 @@ export default function App() {
       </label>
     );
   }
-  const chart = result?.curve.map((p) => ({ ...p, band: [p.lower, p.upper] }));
   return (
     <div className="site">
       <header className="topbar">
@@ -758,14 +818,44 @@ export default function App() {
                     ) : explaining ? (
                       <p role="status">Preparing further explanation…</p>
                     ) : (
-                      <p className="ai-commentary">{explanation}</p>
+                      <div>
+                        {explanationMethod && (
+                          <p className="help">{explanationMethod}</p>
+                        )}
+                        <p className="ai-commentary">{explanation}</p>
+                        {explanationSources.length > 0 && (
+                          <ul className="citation-list">
+                            {explanationSources.map((id) => {
+                              const source = research.find((s) => s.id === id)!;
+                              return (
+                                <li key={id}>
+                                  <a
+                                    href={source.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    [{id}] {source.title} ↗
+                                  </a>
+                                  <details>
+                                    <summary>
+                                      Evidence and population limits
+                                    </summary>
+                                    <p>{source.fact}</p>
+                                  </details>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
                     )}
                     <p className="fineprint">
                       AI receives category labels and curated source facts,
                       including demographic labels when enabled. No guest
                       history is saved by this app. Verification uses Cloudflare
                       Turnstile. Numerical interpretation is calculated locally;
-                      AI selects relevant curated research passages.
+                      AI writes commentary grounded in curated research. Its
+                      prose can still be mistaken; inspect the cited evidence.
                     </p>
                     <a
                       href="https://usa.ipums.org/usa-action/variables/INCWAGE"
@@ -871,50 +961,11 @@ export default function App() {
                     Cross-sectional estimates, not your future career
                     trajectory. Shaded area: estimated 80% range.
                   </p>
-                  <ResponsiveContainer width="100%" height={235}>
-                    <AreaChart
-                      data={chart}
-                      margin={{ left: 0, right: 15, top: 10, bottom: 0 }}
-                    >
-                      <CartesianGrid vertical={false} stroke="#e9ece7" />
-                      <XAxis
-                        dataKey="age"
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        tickFormatter={(n) => "$" + Math.round(n / 1000) + "k"}
-                        width={55}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <Tooltip
-                        formatter={(value) =>
-                          Array.isArray(value)
-                            ? value.map(Number).map(dollars).join(" – ")
-                            : dollars(Number(value))
-                        }
-                        labelFormatter={(l) => "Age " + l}
-                      />
-                      <Area
-                        dataKey="band"
-                        name="Range"
-                        fill="#e2ece6"
-                        stroke="none"
-                        type="monotone"
-                      />
-                      <Area
-                        dataKey="estimate"
-                        name="Estimate"
-                        stroke="#216650"
-                        fill="transparent"
-                        strokeWidth={2.5}
-                        type="monotone"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <Suspense
+                    fallback={<p role="status">Loading age chart...</p>}
+                  >
+                    <AgeChart curve={result.curve} />
+                  </Suspense>
                 </article>
               </>
             )}
@@ -980,6 +1031,12 @@ export default function App() {
                       dollars
                     </small>
                   </span>
+                  <button
+                    className="button small outline"
+                    onClick={() => reopen(h)}
+                  >
+                    Open
+                  </button>
                   <button
                     className="iconbutton"
                     aria-label={"Delete " + h.name}

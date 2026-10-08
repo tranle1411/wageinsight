@@ -19,6 +19,18 @@ jobs:
       - run: pnpm --dir client install --frozen-lockfile
       - run: pnpm --dir client test
       - run: pnpm --dir client build
+      - run: pnpm --dir client check:deploy
+      - run: pnpm --dir worker install --frozen-lockfile
+      - run: pnpm --dir worker check
       - run: pnpm --dir client exec playwright install --with-deps chromium
       - run: pnpm --dir client exec playwright test
       - run: pnpm --dir client exec playwright test --config playwright.explanations.config.ts
+  lifecycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-mlops.txt
+      - run: python -m ml.pipeline

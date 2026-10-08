@@ -1,38 +1,36 @@
-# Deployment checklist
+# Deployment and rollback
 
-## Free guest site
+Frontend: https://wageinsight.chantranle-2026.workers.dev
+Explanation API: https://wageinsight-explanations.chantranle-2026.workers.dev
 
-Create a Cloudflare Pages project linked to the repository. Root: client. Build: pnpm install --frozen-lockfile && pnpm build. Output: dist. Node: 24. Pin pnpm 11.19.0 or use the repository packageManager setting. No environment variables are needed for guest predictions. Confirm model bundle delivery, static routing, mobile layout, and guest reload privacy using the preview deployment before release. Avoid deploying the old render.yaml; it has been removed.
+Tran Le confirms all login methods are live. Existing auth configuration should be retained. The new revision and migration below have not been deployed by this task.
 
-## Accounts
+## Frontend Worker
 
-User actions: create a free Supabase project; configure Google/GitHub OAuth credentials and authorized redirect URLs; arrange a verified free SMTP sender. Supabase's built-in sender cannot deliver public signups. No domain purchase is assumed; provider eligibility must be checked before selecting email delivery.
+Cloudflare Workers Builds: repository root directory client; build command `pnpm install --frozen-lockfile && pnpm build`; deploy command `pnpm deploy`. Use Node 24 and the repository pnpm version. The checked-in wrangler.jsonc deploys dist as SPA static assets. Configure build-time VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_EXPLANATION_URL and VITE_TURNSTILE_SITE_KEY using the existing live values. Do not put service-role keys in Vite variables. Runtime-only dashboard variables cannot update a compiled Vite bundle.
 
-1. Apply supabase/migrations/001_predictions.sql in the SQL editor.
-2. Enable email confirmation; use at least eight-character passwords. Configure confirmation/reset redirect URLs for both localhost and the Pages URL.
-3. If showing signup verification codes, configure the email template to include the provider-supported token. Otherwise the confirmation-link flow remains available. Verification is proof of email ownership, not automatic second-factor authentication on every login.
-4. Copy client/.env.example to client/.env.local for local use, or set the corresponding Pages variables. Only URL and publishable/anon key belong there; never service-role credentials.
-5. Test two real accounts: user A saves; user B cannot select/delete A's prediction; guest cannot insert; A can delete its own prediction. Verify confirmation delivery and password recovery before enabling public email signup.
-6. Verify export and planned backup behavior. Supabase Free may pause after inactivity; guest predictions remain usable.
+Local checks: `pnpm --dir client test`, `pnpm --dir client build`, `pnpm --dir client check:deploy`.
 
-## Optional extended explanations
+## Explanation Worker
 
-Turnstile verification and per-location request limits are implemented. Follow [worker/README.md](worker/README.md) for the separate explanation Worker, private secret, production origin, frontend build variables, and live validation. The enable flag now persists true after the user's live integration check; missing secrets/bindings still fail closed. AI selects approved research passages; numerical comparisons remain deterministic. The frontend is deployed as Workers Static Assets; use its workers.dev origin for authentication and AI configuration rather than a Pages example URL.
+Workers Builds: repository root worker; build command `pnpm install --frozen-lockfile`; deploy command `pnpm deploy`. Retain TURNSTILE_SECRET_KEY as a secret on this Worker. Its widget must permit the frontend hostname and its action is explain. The exact production origin/hostname and AI/IP rate bindings are in worker/wrangler.toml.
 
-The worker directory contains a Cloudflare AI adapter. User action: create/connect a Cloudflare account. Install the pinned worker dependency, update ALLOWED_ORIGIN to the exact frontend origin, then deploy through Wrangler after local checks. Set VITE_EXPLANATION_URL on the frontend to the deployed route.
+The updated response adds personalized commentary and canonical cited sources while preserving text and selectionMethod. Existing frontend requests remain accepted; deploy the Worker first, then rebuild/deploy the frontend. The existing public enable flag stays true. Setting it false is the immediate kill switch; update source too if disabling should survive redeployment.
 
-Stay on the Free plan and a free-eligible model. Add tested rate limiting/bot protection and an application-level quota guard before making the endpoint public. CORS alone is not abuse prevention. The adapter caps context/output but does not independently recompute the browser estimate. Add provider-output grounding/citation evaluations before claiming validated RAG. Secrets never belong in the client. Quota-exhaustion responses include next 00:00 UTC; frontend localizes it. Generic provider errors get a generic retry message.
+Stay on Workers Free. Burst limits are per Cloudflare location, not global accounting; the provider free allocation is account-wide. Inspect actual account usage. Exhaustion displays the next UTC reset; generic outages do not fabricate a reset. Request bodies, tokens, IPs, selected labels and provider exceptions are never written to application logs. Outcome/status/duration and validation mode are logged; trace sampling is 10%. Third-party provider retention remains separate.
 
-Profile inputs are not submitted for guest prediction; optional explanation submits only displayed numeric context and short feature labels/deltas. The application does not persist those requests. Provider retention policies are separate and must be disclosed.
+Local check: `pnpm --dir worker check`. Unit and Playwright checks mock AI/Siteverify; live relevance and real token success/replay need a smoke test after deployment.
 
-## Python reference service
+## Database change
 
-Build Docker from the repository root and publish port 8000 if needed for a local demo. API has no accounts or storage responsibilities in this deployment; Supabase owns auth/history. MODEL_BUNDLE overrides the artifact path; CORS_ORIGINS overrides allowed frontend origins. Missing artifact returns readiness 503. Docker build/run has not been verified here because Docker is unavailable.
+Apply supabase/migrations/002_history_limits.sql once, after the existing 001 migration. It limits new saved JSON payloads and serializes inserts per owner to enforce 100 saved results. Old oversized rows remain readable. Existing ownership policies stay in force. This migration has not been run against the live database here.
 
-## Still required before public release
+Verify: save/open/compare/export/delete, signed-out guest rejection, two-user isolation, email verification/recovery and both OAuth redirects. Reuse existing test accounts; do not expose credentials in chat.
 
-- Account/SMTP/OAuth configuration and real ownership/verification tests.
-- Worker abuse controls and grounding tests if extended AI is enabled.
-- Static-site preview smoke test and a documented production rollback.
-- Decide whether to ship the career model as an explicitly limited exploratory demo despite missing its 10% MAE-improvement gate; no automatic promotion is implied.
-- Review public model/aggregate publication against the applicable extract terms.
+## Rollback
+
+Before release, record the current successful frontend and explanation Worker version IDs in Cloudflare. Keep the current model artifact version and its checksum. Roll back each Worker to its recorded previous version in Deployments if needed. Database schema/data are not rolled back with Worker code. Migration 002 is additive and compatible with the old client; no destructive rollback is planned. Model training writes candidates locally and does not overwrite the public artifact.
+
+## Release interpretation
+
+The current model misses the career 10% improvement gate and has wide income intervals. Ship as an explicitly exploratory portfolio demo; do not describe it as an accurate salary offer predictor. Pipeline quality status remains separate from whether the web demo is deployed. Docker reference configuration has not been run on a Docker engine in this task.

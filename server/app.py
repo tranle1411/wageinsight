@@ -94,7 +94,7 @@ def prediction(data: PredictionRequest):
     if str(data.year) not in artifact["inflation"]:
         raise HTTPException(422, "Unsupported dollar year")
     if not 25 <= data.profile.get("AGE", 0) <= 64:
-        raise HTTPException(422, "Age must be 25â€“64")
+        raise HTTPException(422, "Age must be 25-64")
     for field in artifact["variants"][data.variant]["features"]:
         if field != "AGE" and data.profile.get(field) not in [
             o["value"] for o in artifact["options"][field]

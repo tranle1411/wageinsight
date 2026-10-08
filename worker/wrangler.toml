@@ -20,3 +20,6 @@ simple = { limit = 20, period = 60 }
 
 [observability]
 enabled = true
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.1

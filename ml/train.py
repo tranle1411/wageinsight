@@ -6,6 +6,8 @@ import hashlib
 import json
 import re
 import time
+import platform
+import importlib.metadata
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -14,6 +16,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 from ml.data import CAREER, DEMOGRAPHIC, prepare, weighted_quantile
 from server.runtime import forest_predict
+from ml.release import fingerprint
 
 ROOT = Path(__file__).parents[1]
 
@@ -92,6 +95,13 @@ def metrics(y, p, w):
 
 def labels():
     maps = {}
+    # Sanitized public category labels make training independent of private PDF text.
+    sanitized = ROOT / "ml/category-labels.json"
+    if sanitized.exists():
+        maps = {
+            field: {int(k): v for k, v in values.items()}
+            for field, values in json.loads(sanitized.read_text(encoding="utf-8")).items()
+        }
     # General categories from checked-in dictionaries; occupation labels refreshed below.
     for field, file, id_col, label_col in [
         ("OCC", "occupation.csv", "OCCID", "OCC"),
@@ -121,7 +131,7 @@ def labels():
                 for k, v in json.loads((ROOT / "ml/occupation-labels.json").read_text()).items()
             }
         )
-    maps["CITIZEN"][0] = "US-born / citizen at birth"
+    maps.setdefault("CITIZEN", {})[0] = "US-born / citizen at birth"
     maps["DEGFIELD"][0] = "No bachelor’s degree / no applicable field"
     return maps
 
@@ -129,13 +139,24 @@ def labels():
 def run(args):
     start = time.time()
     source = Path(args.data)
+    if args.cap < 1000:
+        raise ValueError("Use at least 1000 sampled records per year")
     digest = hashlib.sha256()
     with source.open("rb") as fp:
         while chunk := fp.read(1024 * 1024):
             digest.update(chunk)
     cache = ROOT / ".cache"
     cache.mkdir(exist_ok=True)
-    key = digest.hexdigest()[:16] + "-" + str(args.cap)
+    preprocessing = fingerprint(ROOT / "ml/data.py")
+    key = (
+        digest.hexdigest()[:16]
+        + "-"
+        + str(args.cap)
+        + "-"
+        + preprocessing[:8]
+        + "-pandas"
+        + pd.__version__
+    )
     parquet = cache / (key + ".parquet")
     metadata = cache / (key + ".json")
     if parquet.exists() and metadata.exists():
@@ -160,7 +181,7 @@ def run(args):
     test = partitions["test"]
     labelmap = labels()
     bundle = {
-        "version": f"acs-2024-v1-{digest.hexdigest()[:8]}-n{args.cap}",
+        "version": f"acs-2024-v2-{digest.hexdigest()[:8]}-n{args.cap}-{fingerprint(Path(__file__))[:8]}",
         "baseYear": 2024,
         "inflation": {str(y): cpi[2024] / cpi[y] for y in cpi},
         "options": {},
@@ -168,6 +189,16 @@ def run(args):
         "metrics": {},
         "provenance": {
             "datasetSha256": digest.hexdigest(),
+            "trainingCodeSha256": fingerprint(Path(__file__)),
+            "preprocessingSha256": preprocessing,
+            "labelDictionarySha256": fingerprint(ROOT / "ml/category-labels.json"),
+            "environment": {
+                "python": platform.python_version(),
+                **{
+                    name: importlib.metadata.version(name)
+                    for name in ("numpy", "pandas", "scikit-learn", "xgboost")
+                },
+            },
             "eligibleCounts": counts,
             "sampleCapPerYear": args.cap,
             "split": {k: len(v) for k, v in partitions.items()},
@@ -311,7 +342,7 @@ def run(args):
             "reference": reference,
         }
         print(json.dumps(report), flush=True)
-    out = ROOT / "client/public/models"
+    out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
     (out / "bundle.json").write_text(
         json.dumps(bundle, separators=(",", ":"), allow_nan=False), encoding="utf-8"
@@ -322,12 +353,13 @@ def run(args):
         "provenance": bundle["provenance"],
         "seconds": round(time.time() - start, 2),
     }
-    (ROOT / "MODEL_REPORT.json").write_text(json.dumps(summary, indent=2))
+    (out / "MODEL_REPORT.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print("Bundle bytes:", (out / "bundle.json").stat().st_size, flush=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default=str(ROOT / "Database/Raw/raw.csv.csv"))
+    parser.add_argument("--data", default=str(ROOT / "Database/Raw/Raw.csv"))
     parser.add_argument("--cap", type=int, default=20000)
+    parser.add_argument("--output", default=str(ROOT / ".cache/candidate"))
     run(parser.parse_args())

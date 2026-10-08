@@ -786,3 +786,17 @@ footer .brand {
 .ai-commentary {
   white-space: pre-line;
 }
+.citation-list {
+  padding-left: 20px;
+}
+.citation-list li {
+  margin: 14px 0;
+}
+.citation-list summary {
+  cursor: pointer;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.citation-list details p {
+  font-size: 12px;
+}

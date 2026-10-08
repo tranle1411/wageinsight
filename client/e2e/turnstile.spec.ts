@@ -29,6 +29,8 @@ test("verification gates the AI request and sends a token without a raw profile"
       contentType: "application/json",
       body: JSON.stringify({
         text: "Test AI explanation: historical association, not causation.",
+        selectionMethod: "grounded-ai",
+        sources: [{ id: "education" }],
       }),
     });
   });
@@ -46,6 +48,17 @@ test("verification gates the AI request and sends a token without a raw profile"
     ),
   ).toBeVisible();
   expect(calls).toBe(1);
+  await expect(
+    page.getByText("AI-written commentary · cited research", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".citation-list")
+      .getByRole("link", { name: /Education pays/ }),
+  ).toHaveAttribute(
+    "href",
+    "https://www.bls.gov/emp/tables/unemployment-earnings-education.htm",
+  );
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

@@ -1,5 +1,7 @@
 # WageInsight initial model card
 
+Release status: **exploratory demo; not quality-approved**. The local Prefect/MLflow lifecycle records the unchanged public model and enforces accuracy/coverage gates. Its current report also requires coverage review for career RACE:3/RACE:6 and demographic RACE:3. New training writes candidates without replacing this artifact. See LEARNING_GUIDE.md for the reproducible workflow.
+
 ## Population and objective
 
 US states/DC, ages 25–64, wage workers, usual hours >=35 and weeks category 50–52. Positive annual wage income only. Target is log previous-12-month INCWAGE converted to 2024 dollars with CPI99. This is an income proxy, not contractual salary. Retirement/current-employment restrictions are not added; the work reference period defines eligibility.

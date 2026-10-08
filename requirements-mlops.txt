@@ -1,0 +1,3 @@
+-r requirements.txt
+prefect==3.6.6
+mlflow==3.17.0

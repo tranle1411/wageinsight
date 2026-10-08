@@ -44,6 +44,7 @@ function run(
 }
 const verify = vi.fn();
 beforeEach(() => {
+  vi.spyOn(console, "info").mockImplementation(() => {});
   verify.mockReset();
   verify.mockResolvedValue(
     new Response(
@@ -56,7 +57,10 @@ beforeEach(() => {
   );
   vi.stubGlobal("fetch", verify);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 it("rejects foreign origins, invalid context, null body, and missing token before AI", async () => {
   const env = environment();
   expect((await run(valid, env, "https://wrong.example")).status).toBe(403);
@@ -181,7 +185,7 @@ it("passes labeled contrasts and relevant sourced facts to AI, without the token
   expect(calls).not.toContain("fresh-token");
   expect((await run({ ...input, variant: "career" }, env)).status).toBe(422);
 });
-it("never displays AI-generated group medians; returns only approved research passages", async () => {
+it("rejects invented group medians and falls back to approved research passages", async () => {
   const env = environment();
   env.AI.run.mockResolvedValue({
     response: "The median income of all business graduates is $111458.",
@@ -208,4 +212,47 @@ it("never displays AI-generated group medians; returns only approved research pa
   expect(output.text).toContain("[education]");
   expect(output.selectionMethod).toBe("curated-fallback");
   expect(JSON.stringify(env.AI.run.mock.calls)).not.toContain('"estimate":');
+});
+it("returns personalized commentary with canonical citations and no salary arithmetic in AI", async () => {
+  const env = environment();
+  env.AI.run.mockResolvedValue({
+    response: JSON.stringify({
+      insights: [
+        {
+          field: "EDUCD",
+          interpretation:
+            "Your Master's degree selection connects to research on education and earnings. Broad population patterns cannot establish your personal return to education.",
+          sourceIds: ["education"],
+        },
+      ],
+    }),
+  });
+  const response = await run(
+    {
+      ...valid,
+      effects: [
+        {
+          field: "EDUCD",
+          selected: "Master's degree",
+          reference: "Bachelor's degree",
+          delta: 3000,
+        },
+      ],
+    },
+    env,
+  );
+  const output = (await response.json()) as {
+    text: string;
+    selectionMethod: string;
+    sources: { url: string }[];
+  };
+  expect(output.selectionMethod).toBe("grounded-ai");
+  expect(output.text).toContain("Your Master's degree");
+  expect(output.sources[0].url).toBe(
+    "https://www.bls.gov/emp/tables/unemployment-earnings-education.htm",
+  );
+  const prompt = JSON.stringify(env.AI.run.mock.calls);
+  expect(prompt).toContain("higher modeled estimate");
+  expect(prompt).not.toContain('"delta":');
+  expect(prompt).not.toContain('"estimate":');
 });
