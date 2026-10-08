@@ -17,6 +17,8 @@ User actions: create a free Supabase project; configure Google/GitHub OAuth cred
 
 ## Optional extended explanations
 
+Turnstile verification and per-location request limits are now implemented. Follow [worker/README.md](worker/README.md) for the separate explanation Worker, private secret, production origin, frontend build variables, and live validation. Explanations default to disabled until configuration is ready. The current frontend is deployed as Workers Static Assets; use its workers.dev origin for authentication and AI configuration rather than a Pages example URL.
+
 The worker directory contains a Cloudflare AI adapter. User action: create/connect a Cloudflare account. Install the pinned worker dependency, update ALLOWED_ORIGIN to the exact frontend origin, then deploy through Wrangler after local checks. Set VITE_EXPLANATION_URL on the frontend to the deployed route.
 
 Stay on the Free plan and a free-eligible model. Add tested rate limiting/bot protection and an application-level quota guard before making the endpoint public. CORS alone is not abuse prevention. The adapter caps context/output but does not independently recompute the browser estimate. Add provider-output grounding/citation evaluations before claiming validated RAG. Secrets never belong in the client. Quota-exhaustion responses include next 00:00 UTC; frontend localizes it. Generic provider errors get a generic retry message.

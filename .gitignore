@@ -13,6 +13,7 @@ venv/
 
 # Dependencies and local experiment outputs
 node_modules/
+.wrangler/
 __pycache__/
 *.py[cod]
 .pytest_cache/

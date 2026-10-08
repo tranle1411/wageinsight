@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Turnstile } from "./Turnstile";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -62,6 +63,14 @@ export default function App() {
   const [explain, setExplain] = useState(false),
     [explanation, setExplanation] = useState(""),
     [explaining, setExplaining] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const explanationRequest = useRef(0);
+  useEffect(() => {
+    explanationRequest.current++;
+    setVerifying(false);
+    setExplaining(false);
+    setExplanation("");
+  }, [result, year, variant]);
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [code, setCode] = useState(""),
@@ -113,7 +122,10 @@ export default function App() {
       .then((b) => {
         if (active) {
           setBundle(b);
-          const initial: Profile = { ...b.variants.demographic.reference, AGE: 35 };
+          const initial: Profile = {
+            ...b.variants.demographic.reference,
+            AGE: 35,
+          };
           if (
             initial.EDUCD >= 101 &&
             initial.DEGFIELD === 0 &&
@@ -341,7 +353,7 @@ export default function App() {
   async function cloudExplain() {
     if (!result) return;
     setExplain(true);
-    setExplaining(true);
+    setExplaining(false);
     setExplanation("");
     const endpoint = import.meta.env.VITE_EXPLANATION_URL;
     if (!endpoint) {
@@ -351,45 +363,67 @@ export default function App() {
       setExplaining(false);
       return;
     }
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          estimate: result.estimate,
-          lower: result.lower,
-          upper: result.upper,
-          year,
-          variant,
-          effects: result.effects
-            .slice(0, 4)
-            .map((e) => ({ field: labels[e.field], delta: e.delta })),
-        }),
-        signal: AbortSignal.timeout(20000),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        if (data.resetAt)
-          throw Error(
-            "Further explanation is unavailable right now. Try again at " +
-              new Date(data.resetAt).toLocaleString(undefined, {
-                timeZoneName: "short",
-              }),
-          );
-        throw Error(
-          data.error ||
-            "Further explanation is unavailable right now. Please try again later.",
-        );
-      }
-      setExplanation(data.text);
-    } catch (e) {
-      setExplanation(
-        e instanceof Error ? e.message : "Further explanation is unavailable.",
-      );
-    } finally {
-      setExplaining(false);
-    }
+    setVerifying(true);
   }
+  const fetchExplanation = useCallback(
+    async (token: string) => {
+      if (!result) return;
+      const generation = ++explanationRequest.current;
+      const endpoint = import.meta.env.VITE_EXPLANATION_URL;
+      setVerifying(false);
+      setExplaining(true);
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            estimate: result.estimate,
+            token,
+            lower: result.lower,
+            upper: result.upper,
+            year,
+            variant,
+            effects: result.effects
+              .slice(0, 4)
+              .map((e) => ({ field: labels[e.field], delta: e.delta })),
+          }),
+          signal: AbortSignal.timeout(20000),
+        });
+        const data = (await response.json()) as {
+          text?: string;
+          error?: string;
+          resetAt?: string;
+        };
+        if (generation !== explanationRequest.current) return;
+        if (!response.ok) {
+          if (data.resetAt)
+            throw Error(
+              "Further explanation is unavailable right now. Try again at " +
+                new Date(data.resetAt).toLocaleString(undefined, {
+                  timeZoneName: "short",
+                }),
+            );
+          throw Error(
+            data.error ||
+              "Further explanation is unavailable right now. Please try again later.",
+          );
+        }
+        if (typeof data.text !== "string")
+          throw Error("Further explanation is unavailable right now.");
+        setExplanation(data.text);
+      } catch (e) {
+        if (generation !== explanationRequest.current) return;
+        setExplanation(
+          e instanceof Error
+            ? e.message
+            : "Further explanation is unavailable.",
+        );
+      } finally {
+        if (generation === explanationRequest.current) setExplaining(false);
+      }
+    },
+    [result, year, variant],
+  );
   function field(key: string) {
     if (key === "OCC" || key === "IND") {
       const options = bundle?.options[key] ?? [];
@@ -682,7 +716,11 @@ export default function App() {
                     <button
                       className="textbutton"
                       onClick={() =>
-                        explain ? setExplain(false) : cloudExplain()
+                        explain
+                          ? (explanationRequest.current++,
+                            setVerifying(false),
+                            setExplain(false))
+                          : cloudExplain()
                       }
                     >
                       {explain ? "Close explanation" : "Explain this estimate"}{" "}
@@ -703,7 +741,9 @@ export default function App() {
                       this model responds. That change does not prove what
                       caused a wage gap.
                     </p>
-                    {explaining ? (
+                    {verifying ? (
+                      <Turnstile onToken={fetchExplanation} />
+                    ) : explaining ? (
                       <p role="status">Preparing further explanation…</p>
                     ) : (
                       <p>{explanation}</p>

@@ -21,3 +21,4 @@ jobs:
       - run: pnpm --dir client build
       - run: pnpm --dir client exec playwright install --with-deps chromium
       - run: pnpm --dir client exec playwright test
+      - run: pnpm --dir client exec playwright test --config playwright.explanations.config.ts
