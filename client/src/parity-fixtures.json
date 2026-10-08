@@ -1,0 +1,164 @@
+[
+  {
+    "profile": {
+      "AGE": 25,
+      "OCC": 440,
+      "IND": 7860,
+      "EDUCD": 101,
+      "DEGFIELD": 0,
+      "STATEFIP": 6,
+      "SEX": 1,
+      "RACE": 1,
+      "HISPAN": 0,
+      "MARST": 1,
+      "CITIZEN": 0,
+      "SPEAKENG": 3,
+      "VETSTAT": 1
+    },
+    "variant": "career",
+    "year": 2018,
+    "expected": {
+      "estimate": 43859.33914012623,
+      "lower": 26746.44886965201,
+      "upper": 83980.66275905234,
+      "year": 2018,
+      "modelVersion": "acs-2024-v1",
+      "variant": "career"
+    }
+  },
+  {
+    "profile": {
+      "AGE": 35,
+      "OCC": 440,
+      "IND": 7860,
+      "EDUCD": 101,
+      "DEGFIELD": 0,
+      "STATEFIP": 6,
+      "SEX": 1,
+      "RACE": 1,
+      "HISPAN": 0,
+      "MARST": 1,
+      "CITIZEN": 0,
+      "SPEAKENG": 3,
+      "VETSTAT": 1
+    },
+    "variant": "career",
+    "year": 2024,
+    "expected": {
+      "estimate": 73473.8238215102,
+      "lower": 36712.919730626825,
+      "upper": 139188.2687860423,
+      "year": 2024,
+      "modelVersion": "acs-2024-v1",
+      "variant": "career"
+    }
+  },
+  {
+    "profile": {
+      "AGE": 64,
+      "OCC": 440,
+      "IND": 7860,
+      "EDUCD": 101,
+      "DEGFIELD": 0,
+      "STATEFIP": 6,
+      "SEX": 1,
+      "RACE": 1,
+      "HISPAN": 0,
+      "MARST": 1,
+      "CITIZEN": 0,
+      "SPEAKENG": 3,
+      "VETSTAT": 1
+    },
+    "variant": "career",
+    "year": 2021,
+    "expected": {
+      "estimate": 74993.6321628949,
+      "lower": 36143.25019984437,
+      "upper": 146098.07681651023,
+      "year": 2021,
+      "modelVersion": "acs-2024-v1",
+      "variant": "career"
+    }
+  },
+  {
+    "profile": {
+      "AGE": 25,
+      "OCC": 440,
+      "IND": 7860,
+      "EDUCD": 101,
+      "DEGFIELD": 0,
+      "STATEFIP": 6,
+      "SEX": 1,
+      "RACE": 1,
+      "HISPAN": 0,
+      "MARST": 1,
+      "CITIZEN": 0,
+      "SPEAKENG": 3,
+      "VETSTAT": 1
+    },
+    "variant": "demographic",
+    "year": 2018,
+    "expected": {
+      "estimate": 51018.05419548683,
+      "lower": 31245.607456206897,
+      "upper": 103673.92037203095,
+      "year": 2018,
+      "modelVersion": "acs-2024-v1",
+      "variant": "demographic"
+    }
+  },
+  {
+    "profile": {
+      "AGE": 35,
+      "OCC": 440,
+      "IND": 7860,
+      "EDUCD": 101,
+      "DEGFIELD": 0,
+      "STATEFIP": 6,
+      "SEX": 1,
+      "RACE": 1,
+      "HISPAN": 0,
+      "MARST": 1,
+      "CITIZEN": 0,
+      "SPEAKENG": 3,
+      "VETSTAT": 1
+    },
+    "variant": "demographic",
+    "year": 2024,
+    "expected": {
+      "estimate": 88516.39588897227,
+      "lower": 44802.14890801229,
+      "upper": 174321.13536627567,
+      "year": 2024,
+      "modelVersion": "acs-2024-v1",
+      "variant": "demographic"
+    }
+  },
+  {
+    "profile": {
+      "AGE": 64,
+      "OCC": 440,
+      "IND": 7860,
+      "EDUCD": 101,
+      "DEGFIELD": 0,
+      "STATEFIP": 6,
+      "SEX": 1,
+      "RACE": 1,
+      "HISPAN": 0,
+      "MARST": 1,
+      "CITIZEN": 0,
+      "SPEAKENG": 3,
+      "VETSTAT": 1
+    },
+    "variant": "demographic",
+    "year": 2021,
+    "expected": {
+      "estimate": 86197.66284044413,
+      "lower": 43299.247878138995,
+      "upper": 179303.61032161472,
+      "year": 2021,
+      "modelVersion": "acs-2024-v1",
+      "variant": "demographic"
+    }
+  }
+]

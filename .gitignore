@@ -1,0 +1,26 @@
+# Local respondent data and extract metadata
+/Database/Raw/
+/Database/raw.csv
+/Database/*.db
+/CSC498.db
+
+# Credentials and local environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Dependencies and local experiment outputs
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+mlruns/
+mlartifacts/
+tmp/
+.cache/
+client/dist/
+client/tsconfig.tsbuildinfo
+client/test-results/
+client/playwright-report/

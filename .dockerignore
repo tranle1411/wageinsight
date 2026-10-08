@@ -1,0 +1,10 @@
+.git
+.venv
+node_modules
+client/node_modules
+Database
+.cache
+tmp
+.env*
+server/model
+server/encoded_data

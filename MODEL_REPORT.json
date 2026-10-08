@@ -1,0 +1,188 @@
+{
+  "version": "acs-2024-v1-e0d8d55c-n20000",
+  "metrics": {
+    "cohortBaseline": {
+      "mae": 36797.60261140923,
+      "rmse": 75113.83808347702,
+      "r2": 0.21140015919008637
+    },
+    "career": {
+      "mae": 33755.56306317288,
+      "rmse": 70005.12501626482,
+      "r2": 0.3150222749430496,
+      "coverage": 0.7990985138348569,
+      "meanWidth": 98114.83548236037,
+      "maeImprovement": 0.08266950378156313
+    },
+    "careerLinear": {
+      "mae": 34481.65545003479,
+      "rmse": 71422.43892885487,
+      "r2": 0.2870055808076897
+    },
+    "demographic": {
+      "mae": 32921.74211187084,
+      "rmse": 68891.82394467166,
+      "r2": 0.3366356261652944,
+      "coverage": 0.8008117241288275,
+      "meanWidth": 95805.82780404564,
+      "maeImprovement": 0.10532915800163212
+    },
+    "demographicLinear": {
+      "mae": 33644.93586749974,
+      "rmse": 70310.99182038156,
+      "r2": 0.30902358133246755
+    }
+  },
+  "provenance": {
+    "datasetSha256": "e0d8d55c1726092c406a5bb7534cdc021e5311c1abe9c61574d92e4faed03a60",
+    "eligibleCounts": {
+      "2018": 867200,
+      "2019": 884441,
+      "2021": 835916,
+      "2022": 904376,
+      "2023": 919610,
+      "2024": 921685
+    },
+    "sampleCapPerYear": 20000,
+    "split": {
+      "train": 60000,
+      "validation": 20000,
+      "calibration": 20000,
+      "test": 20000
+    },
+    "target": "positive wage income; full-time year-round wage workers",
+    "limitations": [
+      "Historical associations, not causation or career forecasts",
+      "Unweighted counts constrain rare-category encoding; weighted target means",
+      "QINCWAGE unavailable",
+      "No actual years of experience",
+      "Income is top-coded",
+      "Time inflation conversion is not a current labor-market update"
+    ],
+    "careerSubgroups": {
+      "SEX:1": {
+        "n": 10855,
+        "effectiveN": 6126.317748469807,
+        "mae": 39341.84468264885,
+        "coverage": 0.7855780345076959
+      },
+      "SEX:2": {
+        "n": 9145,
+        "effectiveN": 5129.015421439366,
+        "mae": 27011.761588287216,
+        "coverage": 0.815420538866638
+      },
+      "RACE:1": {
+        "n": 13346,
+        "effectiveN": 7666.3420759201945,
+        "mae": 36239.05187434964,
+        "coverage": 0.8065932657390014
+      },
+      "RACE:2": {
+        "n": 1535,
+        "effectiveN": 902.0477198649968,
+        "mae": 23444.22631598099,
+        "coverage": 0.7811425991119436
+      },
+      "RACE:3": {
+        "n": 206,
+        "effectiveN": 103.00109062147156,
+        "mae": 23919.929866267514,
+        "coverage": 0.8487622089808957
+      },
+      "RACE:4": {
+        "n": 411,
+        "effectiveN": 268.44256075036753,
+        "mae": 58555.697201283554,
+        "coverage": 0.7888755381996596
+      },
+      "RACE:6": {
+        "n": 1139,
+        "effectiveN": 647.6035093212712,
+        "mae": 43818.87230198251,
+        "coverage": 0.7696348132511096
+      },
+      "RACE:7": {
+        "n": 1186,
+        "effectiveN": 751.9614746562853,
+        "mae": 22860.582802177174,
+        "coverage": 0.8206828379046286
+      },
+      "RACE:8": {
+        "n": 2004,
+        "effectiveN": 1102.9373344370297,
+        "mae": 29280.68188883575,
+        "coverage": 0.7784501568253103
+      },
+      "RACE:9": {
+        "n": 132,
+        "effectiveN": 64.22496125035511,
+        "mae": 26579.35615588405,
+        "coverage": 0.7812383206677465
+      }
+    },
+    "demographicSubgroups": {
+      "SEX:1": {
+        "n": 10855,
+        "effectiveN": 6126.317748469807,
+        "mae": 38552.51075532817,
+        "coverage": 0.7990108150087876
+      },
+      "SEX:2": {
+        "n": 9145,
+        "effectiveN": 5129.015421439366,
+        "mae": 26124.23556474303,
+        "coverage": 0.8029857952564834
+      },
+      "RACE:1": {
+        "n": 13346,
+        "effectiveN": 7666.3420759201945,
+        "mae": 35402.95400398233,
+        "coverage": 0.8043501593339094
+      },
+      "RACE:2": {
+        "n": 1535,
+        "effectiveN": 902.0477198649968,
+        "mae": 22487.055292111796,
+        "coverage": 0.7969511736225509
+      },
+      "RACE:3": {
+        "n": 206,
+        "effectiveN": 103.00109062147156,
+        "mae": 22989.50355207438,
+        "coverage": 0.8441550463787701
+      },
+      "RACE:4": {
+        "n": 411,
+        "effectiveN": 268.44256075036753,
+        "mae": 58603.85087415397,
+        "coverage": 0.7941574046260137
+      },
+      "RACE:6": {
+        "n": 1139,
+        "effectiveN": 647.6035093212712,
+        "mae": 43218.63752904316,
+        "coverage": 0.793429298050232
+      },
+      "RACE:7": {
+        "n": 1186,
+        "effectiveN": 751.9614746562853,
+        "mae": 22014.836520036257,
+        "coverage": 0.8279746583563878
+      },
+      "RACE:8": {
+        "n": 2004,
+        "effectiveN": 1102.9373344370297,
+        "mae": 28396.806107688953,
+        "coverage": 0.771158632210555
+      },
+      "RACE:9": {
+        "n": 132,
+        "effectiveN": 64.22496125035511,
+        "mae": 25596.683768575,
+        "coverage": 0.7910801046468171
+      }
+    }
+  },
+  "seconds": 49.86
+}

@@ -1,0 +1,7 @@
+name = "wageinsight-explanations"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+[ai]
+binding = "AI"
+[vars]
+ALLOWED_ORIGIN = "http://localhost:5173"

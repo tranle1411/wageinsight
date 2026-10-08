@@ -1,68 +1,80 @@
-# WageInsight: An American Salary Predictor
+# WageInsight
 
-## Introduction  
-WageInsight is a full-stack web application that leverages U.S. Census microdata to predict and visualize how demographic and occupational factors influence individual salaries. Built with a React/Material-UI front end and a Flask/XGBoost back end, it turns a user’s profile into a dynamic salary-vs-age curve and a written summary of key disparities.
+Explore how education, profession, location, and optional demographics relate to US full-time annual wage income. Built by [Tran Le](https://github.com/tranle1411/wageinsight).
 
----
+## Working implementation
 
-## Purpose  
-- **Data-Driven Transparency**: Expose how features like gender, marital status, veteran status, language ability, and ethnicity relate to wage gaps.  
-- **Interactive Exploration**: Let users try both a “Basic” model (age + a handful of categorical fields) and an “Advanced” model (full feature set) and see predictions across ages 25–64.  
-- **Educational Tool**: Surface median-salary differentials (e.g. “Non-Hispanics make \$X more than Hispanics”) to spark conversations about equity and policy.
+- React + TypeScript + Vite; responsive profile form with occupation/industry search.
+- A Web Worker predicts locally from a compact, versioned XGBoost tree bundle. Guest profiles and comparisons remain in memory; JSON exports are explicitly downloaded.
+- Median estimate, calibrated approximate 80% income range, individual model associations, weighted occupation peer statistics, age scenarios, up to four profile comparisons, and collapsible explanations.
+- Two models: career/location/education and optional demographic exploration. Changing dollar year converts purchasing power over time; it does not forecast the labor market.
+- FastAPI/Pydantic local reference API with CORS, request-size limits, startup model loading, readiness, safe latency logs, and OpenAPI documentation.
+- Supabase integration for OAuth, email/password verification, password recovery, explicit Save/Delete, and owner-only PostgreSQL history. Requires external configuration; public auth is not yet verified.
+- Optional Cloudflare Workers AI explanation adapter. Local text remains available without AI. Requires external configuration and production abuse controls before public activation.
+- Chunked pandas/Parquet preparation, chronological splits, household-fold cross-fitted weighted target encoding, quantile regression, held-out calibration, native/export parity checks, linear/cohort baselines, and subgroup error reporting.
+- pytest, Vitest, Playwright desktop/mobile checks, Docker reference deployment, and GitHub Actions CI.
 
----
+## Run locally
 
-## Data Pipeline & Modeling  
+Python 3.12 and Node 24 with pnpm 11.19.0:
 
-1. **Data Source**  
-   - IPUMS USA extracts (2013–2023)  
-   - ~1.5 million working-age respondents (18–65)  
-   - Features: `AGE`, `SEX`, `MARST`, `VETSTAT`, `HISPAN`, `CITIZEN`, `SPEAKENG`, `OCC`, `IND`, `EDUC`, `DEGFIELD1`, `DEGFIELD2`, `RACE`, `WORKSTATE`, target `INCWAGE`  
+~~~powershell
+python -m venv .venv
+./.venv/Scripts/python.exe -m pip install -r requirements.txt
+pnpm --dir client install --frozen-lockfile
+pnpm --dir client start
+~~~
 
-2. **Preprocessing**  
-   - **One-Hot/Binary Encoding** for booleans & small categoricals (gender, marital status, veteran, etc.)  
-   - **Target Encoding** for high-cardinality fields (industry, occupation, degree fields, state, race) by mapping each category to the average log-wage in the training set  
-   - **Log-Transform** of `INCWAGE` stabilizes skew  
+Open http://127.0.0.1:5173. The checked-in public bundle allows guest use without Python or raw data. The local API is optional:
 
-3. **Modeling**  
-   - **Baseline**: Ordinary Least Squares (OLS) & Lasso regressions for interpretability  
-   - **Production**: XGBoost regressors  
-     - **Basic Model** uses only age + 5 categorical features  
-     - **Advanced Model** uses full 14-feature set  
-   - **Evaluation**:  
-     - XGBoost achieves RMSE ≈ \$54 k, R² ≈ 0.50 on held-out data  
-     - Cross-validation to guard against overfitting  
+~~~powershell
+./.venv/Scripts/python.exe -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+~~~
 
----
+Open http://127.0.0.1:8000/docs. On Linux/macOS use .venv/bin/python instead of the Windows executable path.
 
-## Application Features  
+## Reproduce training
 
-- **Mode Selector**: Choose Basic vs. Advanced model  
-- **Interactive Inputs**:  
-  - **Age curve** generated automatically over ages 25–64  
-  - **Autocomplete dropdowns** for high-cardinality fields  
-- **Salary-Age Curve**: Plotly line chart with hover tooltips  
-- **Equity Summaries**: “On median, \*\*Group A\*\* make \$X more/less than \*\*Group B\*\*” for each boolean feature  
-- **Responsive UI**: Centered form; side-by-side chart & textual panel  
+Place the private extract at Database/Raw/raw.csv.csv. The native codebook or sanitized label dictionaries are needed for new category labels. Raw files and extracted metadata stay outside Git.
 
----
+~~~powershell
+./.venv/Scripts/python.exe -m ml.train --cap 20000
+~~~
 
-## Weaknesses  
+20,000 sampled records per year; 60,000 training rows across 2018/2019/2021, validation 2022, calibration 2023, test 2024. Positive wage income only; ages 25–64, at least 35 usual hours/week, 50–52 weeks/year, wage workers, states/DC. The sampler uses stable hashes and corrects survey weights for within-year sampling fractions. It does not impose the old $15k–$500k wage restriction. CPI99 normalizes income to 2024 dollars; original price factors are retained for supported display years.
 
-- **Data Limitations**:  
-  - IPUMS data doesn’t capture fringe benefits, hours worked, regional cost-of-living differences.  
-  - Self-reported wages may contain reporting bias.  
-- **Model Limitations**:  
-  - Log-wage target ignores zero/informal earnings.  
-  - XGBoost can’t easily surface causal relationships—only correlations.  
-- **Equity Summaries** assume everyone else holds constant which may oversimplify intersectional effects.  
+The first scan is cached privately in .cache. Training uses two CPU threads, depth-four trees, early stopping, and no unbounded grid search. Outputs: client/public/models/bundle.json and MODEL_REPORT.json. Small categories use a global fallback; published occupation summaries require at least 100 sampled training records.
 
----
+Occupation labels: https://usa.ipums.org/usa/volii/occ2018.shtml. Current industry labels use the existing dictionary; unrecognized values are explicitly shown as codes. Revisions to classifications remain a limitation.
 
-## Future Enhancements  
+## Measured results
 
-- **Additional Features**: Incorporate hours worked, industry growth trends, metropolitan vs. rural splits.  
-- **Causal Analysis**: Use propensity-score matching or experimental methods to better isolate effect sizes.  
-- **User Profiles & Persistence**: Allow users to save scenarios, compare multiple profiles side-by-side.  
-- **Multi-Language Support**: Reach non-English speakers with localized UI & data descriptions.  
-- **Deeper Visualizations**: Add interactive heatmaps, geographic choropleths for state-level wage maps.  
+On a 20,000-record held-out 2024 sample, weighted dollar MAE is $36,798 for the occupation/state/education cohort baseline with occupation fallback, $33,756 for career XGBoost, and $32,922 for demographic XGBoost. Improvements are 8.3% and 10.5%, respectively. Dollar R²: 0.315 and 0.337. Estimated 80% interval coverage: 79.9% and 80.1%. Mean interval widths remain approximately $98k and $96k.
+
+The career model does not meet the proposed 10% baseline-improvement gate. Individual forecasts remain imprecise. Full metrics, subgroup effective sample sizes, dataset fingerprint, and split sizes are in MODEL_REPORT.json and MODEL_CARD.md. These differ from the historical README's unverified scores; do not compare incompatible evaluation protocols.
+
+## Verify
+
+~~~powershell
+./.venv/Scripts/python.exe -m pytest tests -q
+pnpm --dir client test
+pnpm --dir client build
+pnpm --dir client exec playwright install chromium
+pnpm --dir client exec playwright test
+~~~
+
+CI verifies the public bundle without access to private microdata. Native XGBoost versus portable export is checked during training; Vitest compares TypeScript against Python synthetic-profile fixtures. Refresh fixtures when the numeric model changes.
+
+## Deployment and accounts
+
+See DEPLOYMENT.md. Guest frontend is a static deployment; no sleeping API is required. Do not expose server-side credentials as VITE variables. Supabase's publishable/anon key is intentionally public, secured by row-level security.
+
+No public deployment, account backend, SMTP delivery, or live AI provider has been configured or verified yet. Docker is provided but has not been run on this machine. Power BI, dbt, Prefect, and MLflow are not implemented in this first slice and should not yet be claimed on a resume.
+
+## Data and interpretation
+
+Data: IPUMS USA Version 16.0, https://doi.org/10.18128/D010.V16.0. The PDF codebook is private because printed footers contain signed download URLs. Follow IPUMS citation and publication conditions; do not redistribute respondent records.
+
+INCWAGE represents previous-12-month wage income, not contractual salary, benefits, or self-employed income. Age/education comparisons and demographic associations are not causal estimates. Degree field is the bachelor's field, even for advanced-degree holders. Actual experience is unavailable. State purchasing-power comparisons using BEA RPP are planned but not yet implemented; time inflation conversion is implemented.
+
+Historical notebook/SQL and legacy model artifacts remain as research references. The new application does not use their encodings or pickles. Architecture decisions: ARCHITECTURE.md. Extract validation: DATA_AUDIT.md.
